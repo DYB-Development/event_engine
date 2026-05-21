@@ -6,6 +6,7 @@ class SchemaToRubyTest < ActiveSupport::TestCase
       event_name: "cow.fed",
       event_version: 1,
       event_type: "domain",
+      event_level: 3,
       required_inputs: [:cow],
       optional_inputs: [:barn],
       payload_fields: [
@@ -20,6 +21,7 @@ class SchemaToRubyTest < ActiveSupport::TestCase
         event_name: "cow.fed",
         event_version: 1,
         event_type: "domain",
+        event_level: 3,
         required_inputs: [:cow],
         optional_inputs: [:barn],
         payload_fields: [{name: :cow_id, from: :cow, attr: :id}]
