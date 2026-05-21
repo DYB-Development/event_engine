@@ -13,6 +13,7 @@ module EventEngine
         :event_name,
         :event_version,
         :event_type,
+        :event_level,
         :required_inputs,
         :optional_inputs,
         :payload_fields,
@@ -80,6 +81,7 @@ module EventEngine
           Schema.new(
             event_name: @event_name,
             event_type: @event_type,
+            event_level: @event_level,
             required_inputs: required,
             optional_inputs: optional,
             payload_fields: payload_fields
