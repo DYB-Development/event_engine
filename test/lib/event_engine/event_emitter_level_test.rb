@@ -44,5 +44,21 @@ module EventEngine
         )
       end
     end
+
+    test "level 1 event invokes each subscriber synchronously" do
+      received = []
+      Class.new(Subscriber) do
+        subscribes_to :cow_observed
+        define_method(:handle) { |event| received << event }
+      end
+
+      EventEmitter.emit(
+        event_name: :cow_observed,
+        data: { cow: OpenStruct.new(weight: 500) },
+        registry: @registry
+      )
+
+      assert_equal 1, received.size
+    end
   end
 end

@@ -34,7 +34,11 @@ module EventEngine
       attrs[:aggregate_version] = aggregate_version
 
       # Level 1 executes synchronously in-process and never touches the outbox.
-      return if schema.event_level == 1
+      if schema.event_level == 1
+        event = Event.new(**attrs)
+        SubscriberRegistry.subscribers_for(event_name).each { |subscriber| subscriber.new.handle(event) }
+        return
+      end
 
       event = OutboxWriter.write(attrs)
 
