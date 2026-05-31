@@ -23,8 +23,17 @@ module EventEngine
       required_payload :weight, from: :cow, attr: :weight
     end
 
+    class CowMilked < EventDefinition
+      event_name :cow_milked
+      event_type :system
+      event_level 3
+
+      input :cow
+      required_payload :weight, from: :cow, attr: :weight
+    end
+
     setup do
-      compiled = DslCompiler.compile([CowObserved, CowMooed])
+      compiled = DslCompiler.compile([CowObserved, CowMooed, CowMilked])
       compiled.finalize!
 
       event_schema = EventSchema.new
@@ -110,6 +119,16 @@ module EventEngine
       )
 
       assert_instance_of EventEngine::Event, result
+    end
+
+    test "level 3 event persists its level on the outbox row" do
+      event = EventEmitter.emit(
+        event_name: :cow_milked,
+        data: { cow: OpenStruct.new(weight: 500) },
+        registry: @registry
+      )
+
+      assert_equal 3, event.event_level
     end
   end
 end
