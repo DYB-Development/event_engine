@@ -43,8 +43,11 @@ module EventEngine
         return event
       end
 
-      # Level 2 defers to a background job and never touches the outbox.
-      return if schema.event_level == 2
+      # Level 2 defers subscriber invocation to a background job, no outbox.
+      if schema.event_level == 2
+        DispatchSubscribersJob.perform_later(event_name.to_s, attrs)
+        return
+      end
 
       event = OutboxWriter.write(attrs)
 

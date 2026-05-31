@@ -3,6 +3,8 @@ require "ostruct"
 
 module EventEngine
   class EventEmitterLevelTest < ActiveSupport::TestCase
+    include ActiveJob::TestHelper
+
     class CowObserved < EventDefinition
       event_name :cow_observed
       event_type :system
@@ -82,6 +84,16 @@ module EventEngine
 
     test "level 2 event does not write an outbox row" do
       assert_no_difference -> { OutboxEvent.count } do
+        EventEmitter.emit(
+          event_name: :cow_mooed,
+          data: { cow: OpenStruct.new(weight: 500) },
+          registry: @registry
+        )
+      end
+    end
+
+    test "level 2 event enqueues a dispatch job" do
+      assert_enqueued_with(job: DispatchSubscribersJob) do
         EventEmitter.emit(
           event_name: :cow_mooed,
           data: { cow: OpenStruct.new(weight: 500) },
