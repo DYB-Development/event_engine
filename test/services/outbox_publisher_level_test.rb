@@ -30,5 +30,14 @@ module EventEngine
 
       assert_equal 1, received.size
     end
+
+    test "does not publish a level 3 event to the transport" do
+      build_event(event_level: 3)
+      transport = RecordingTransport.new
+
+      OutboxPublisher.new(transport: transport).call
+
+      assert_empty transport.published
+    end
   end
 end
