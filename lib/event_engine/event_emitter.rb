@@ -37,7 +37,7 @@ module EventEngine
       if schema.event_level == 1
         event = Event.new(**attrs)
         SubscriberRegistry.subscribers_for(event_name).each { |subscriber| subscriber.new.handle(event) }
-        return
+        return event
       end
 
       event = OutboxWriter.write(attrs)

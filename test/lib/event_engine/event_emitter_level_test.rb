@@ -60,5 +60,15 @@ module EventEngine
 
       assert_equal 1, received.size
     end
+
+    test "level 1 emit returns a non-persisted event object" do
+      result = EventEmitter.emit(
+        event_name: :cow_observed,
+        data: { cow: OpenStruct.new(weight: 500) },
+        registry: @registry
+      )
+
+      assert_instance_of EventEngine::Event, result
+    end
   end
 end
