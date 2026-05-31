@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_12_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_12_000004) do
   create_table "event_engine_outbox_events", force: :cascade do |t|
     t.string "aggregate_id"
     t.string "aggregate_type"
@@ -19,6 +19,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_12_000003) do
     t.datetime "created_at", null: false
     t.datetime "dead_lettered_at"
     t.string "event_name", null: false
+    t.integer "event_level"
     t.string "event_type", null: false
     t.integer "event_version", null: false
     t.string "idempotency_key"
