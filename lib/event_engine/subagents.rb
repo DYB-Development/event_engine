@@ -87,5 +87,22 @@ module EventEngine
     def self.names
       AGENTS.map { |agent| agent[:name] }
     end
+
+    def self.content_for(name)
+      agent = AGENTS.find { |candidate| candidate[:name] == name }
+      raise ArgumentError, "unknown subagent: #{name}" unless agent
+
+      <<~MARKDOWN
+        ---
+        name: #{agent[:name]}
+        description: #{agent[:description]}
+        tools: #{agent[:tools]}
+        ---
+
+        #{agent[:body]}
+
+        #{Reference.content}
+      MARKDOWN
+    end
   end
 end
