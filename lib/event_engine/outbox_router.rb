@@ -12,6 +12,9 @@ module EventEngine
     # (e.g. level 5 / event sourcing, which is not yet implemented).
     class UnsupportedLevelError < StandardError; end
 
+    # Raised when a level 4 event is routed but no transport is configured.
+    class MissingTransportError < StandardError; end
+
     # @param transport [#publish] the broker transport used for level 4 events
     def initialize(transport:)
       @transport = transport
@@ -27,6 +30,12 @@ module EventEngine
         SubscriberRegistry.subscribers_for(event.event_name).each do |subscriber|
           subscriber.new.handle(event)
         end
+      when 4
+        unless @transport
+          raise MissingTransportError,
+                "event_level 4 event '#{event.event_name}' requires a transport, but none is configured"
+        end
+        @transport.publish(event)
       when 5
         raise UnsupportedLevelError, "event_level 5 (event sourcing) is not supported"
       else
