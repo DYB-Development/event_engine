@@ -48,14 +48,28 @@ end
 
 Duplicate `input`/`optional_input` names raise `ArgumentError`.
 
-**Event levels** control how an emitted event is dispatched:
+**Choosing an event level.** `event_level` controls how an emitted event is
+dispatched. The guiding principle: **adopt the lowest level that solves your
+actual problem, and move up only when the problem demands it** — each step up
+buys something but costs operational surface, latency, and more ways to fail.
 
-| Level | Behavior |
-|---|---|
-| 1 | Subscribers invoked synchronously in the caller's stack. |
-| 2 | Subscribers invoked in a background job. |
-| 3 | Written to the outbox, then subscribers invoked when the outbox drains. |
-| 4 | Outbox + broker transport delivery. |
+| Level | Durable? | Where it goes | Adopt when | Be cautious because |
+|---|---|---|---|---|
+| **1 sync** | no | in-app subscribers, synchronously in the caller's stack | a cheap in-process reaction that must happen right now | a slow or failing subscriber blocks and breaks the emitting action; nothing is persisted, so it is lost on a crash |
+| **2 job** | no | in-app subscribers, via a background job | the reaction can be deferred and shouldn't make the caller wait | still not durable — the work is lost if the job/process drops it; requires an ActiveJob backend; subscriber failures don't surface to the caller |
+| **3 outbox** | **yes** | in-app subscribers, when the outbox drains | the reaction must not be lost and must be atomic with your DB write — but it stays inside the app | more moving parts (the outbox publisher has to run); delivery is eventual, not immediate |
+| **4 outbox + broker** | **yes** | **outside the app**, to the configured transport (Kafka, etc.) | an independent service needs to consume the event on its own deploy cycle | it becomes a cross-service contract, so schema/version discipline matters; requires a real transport or routing raises `MissingTransportError` |
+
+Durability is exactly what separates level 3 from level 2: level 3 captures the
+event in the outbox inside your transaction, so it survives a crash. The 3→4
+distinction is made when the outbox drains — level 3 notifies in-app subscribers,
+level 4 publishes to the external broker.
+
+Level 5 (event sourcing) is reserved on the ladder but **not supported** — routing
+a level-5 event raises `UnsupportedLevelError`.
+
+Keep subscribers idempotent and free of request-context assumptions, so moving an
+event up a level later doesn't require rewriting them.
 
 ---
 
