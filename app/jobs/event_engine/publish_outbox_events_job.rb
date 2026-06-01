@@ -7,7 +7,7 @@ module EventEngine
       raise "EventEngine transport not configured" unless config&.transport
 
       OutboxPublisher.new(
-        transport: config.transport,
+        router: OutboxRouter.new(transport: config.transport),
         batch_size: config.batch_size,
         max_attempts: config.max_attempts
       ).call

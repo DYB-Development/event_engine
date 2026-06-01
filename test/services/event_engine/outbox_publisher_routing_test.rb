@@ -26,7 +26,7 @@ module EventEngine
       end
       build_event(event_level: 3)
 
-      OutboxPublisher.new(transport: EventEngine::Transports::InMemoryTransport.new).call
+      OutboxPublisher.new(router: OutboxRouter.new(transport: EventEngine::Transports::InMemoryTransport.new)).call
 
       assert_equal 1, received.size
     end

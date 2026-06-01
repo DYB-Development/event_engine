@@ -77,7 +77,7 @@ module EventEngine
       )
 
       transport = Transports::InMemoryTransport.new
-      publisher = OutboxPublisher.new(transport: transport)
+      publisher = OutboxPublisher.new(router: OutboxRouter.new(transport: transport))
       publisher.call
 
       assert_equal 1, @notifications.size
@@ -105,7 +105,7 @@ module EventEngine
       )
 
       failing_transport = FailingTransport.new
-      publisher = OutboxPublisher.new(transport: failing_transport, max_attempts: 3)
+      publisher = OutboxPublisher.new(router: OutboxRouter.new(transport: failing_transport), max_attempts: 3)
       publisher.call
 
       assert_equal 1, @notifications.size
@@ -137,7 +137,7 @@ module EventEngine
       end
 
       transport = Transports::InMemoryTransport.new
-      publisher = OutboxPublisher.new(transport: transport)
+      publisher = OutboxPublisher.new(router: OutboxRouter.new(transport: transport))
       publisher.call
 
       assert_equal 1, @notifications.size

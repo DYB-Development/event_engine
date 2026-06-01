@@ -71,7 +71,7 @@ module EventEngine
         end
 
         OutboxPublisher.new(
-          transport: transport,
+          router: OutboxRouter.new(transport: transport),
           batch_size: EventEngine.configuration.batch_size
         ).call
       end

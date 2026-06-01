@@ -1,16 +1,15 @@
 module EventEngine
-  # Reads unpublished events from the outbox and sends them through the
-  # configured transport. Handles retries and dead-lettering on failure.
+  # Reads unpublished events from the outbox and dispatches each through the
+  # injected router. Handles retries and dead-lettering on failure.
   #
   # Fires +ActiveSupport::Notifications+ for published events, dead letters,
   # and batch completion.
   class OutboxPublisher
-    # @param transport [#publish] the transport to publish through
+    # @param router [#route] dispatches each drained event to its destination
     # @param batch_size [Integer, nil] max events per batch (nil for unlimited)
     # @param max_attempts [Integer, nil] max attempts before dead-lettering
-    def initialize(transport:, batch_size: nil, max_attempts: nil, locking_strategy: nil)
-      @transport = transport
-      @router = OutboxRouter.new(transport: transport)
+    def initialize(router:, batch_size: nil, max_attempts: nil, locking_strategy: nil)
+      @router = router
       @batch_size = batch_size
       @max_attempts = max_attempts
       @locking_strategy = locking_strategy || LockingStrategy.for_current_adapter

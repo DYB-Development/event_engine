@@ -11,7 +11,7 @@ class EventEngine::EndToEndPublishTest < ActiveSupport::TestCase
     )
 
     transport = EventEngine::Transports::InMemoryTransport.new
-    publisher = EventEngine::OutboxPublisher.new(transport: transport)
+    publisher = EventEngine::OutboxPublisher.new(router: EventEngine::OutboxRouter.new(transport: transport))
 
     publisher.call
 

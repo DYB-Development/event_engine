@@ -6,7 +6,7 @@ module EventEngine
     test "publisher does nothing when there are no unpublished events" do
       transport = Minitest::Mock.new
 
-      publisher = EventEngine::OutboxPublisher.new(transport: transport)
+      publisher = EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport))
       publisher.call
 
       transport.verify
@@ -25,7 +25,7 @@ module EventEngine
       transport = Minitest::Mock.new
       transport.expect :publish, true, [event]
 
-      EventEngine::OutboxPublisher.new(transport: transport).call
+      EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport)).call
 
       assert_not_nil event.reload.published_at
       transport.verify
@@ -45,7 +45,7 @@ module EventEngine
         raise StandardError, "delivery failed"
       end
 
-      EventEngine::OutboxPublisher.new(transport: transport).call
+      EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport)).call
 
       assert_nil event.reload.published_at
       transport.verify
@@ -65,7 +65,7 @@ module EventEngine
         raise StandardError, "boom"
       end
 
-      EventEngine::OutboxPublisher.new(transport: transport).call
+      EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport)).call
 
       assert_equal 1, event.reload.attempts
     end
@@ -76,7 +76,7 @@ module EventEngine
       e3 = EventEngine::OutboxEvent.create!(event_type: "A", event_name: "a", event_version: 1, occurred_at: Time.current, payload: { x: 3 })
 
       transport = EventEngine::Transports::InMemoryTransport.new
-      publisher = EventEngine::OutboxPublisher.new(transport: transport, batch_size: 2)
+      publisher = EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport), batch_size: 2)
 
       publisher.call
 
@@ -106,7 +106,7 @@ module EventEngine
       transport = EventEngine::Transports::InMemoryTransport.new
 
       EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         batch_size: 10,
         max_attempts: 5
       ).call
@@ -131,7 +131,7 @@ module EventEngine
       end
 
       EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         max_attempts: 5
       ).call
 
@@ -168,7 +168,7 @@ module EventEngine
       transport = EventEngine::Transports::InMemoryTransport.new
 
       publisher = EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         batch_size: 2
       )
 
@@ -192,7 +192,7 @@ module EventEngine
         raise ArgumentError, "invalid payload format"
       end
 
-      EventEngine::OutboxPublisher.new(transport: transport).call
+      EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport)).call
 
       event.reload
       assert_equal "invalid payload format", event.last_error_message
@@ -215,7 +215,7 @@ module EventEngine
       end
 
       EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         max_attempts: 5
       ).call
 
@@ -254,7 +254,7 @@ module EventEngine
       end
 
       EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         batch_size: 10,
         max_attempts: 3
       ).call
@@ -283,7 +283,7 @@ module EventEngine
       strategy = EventEngine::LockingStrategy::NullStrategy.new
 
       EventEngine::OutboxPublisher.new(
-        transport: transport,
+        router: OutboxRouter.new(transport: transport),
         locking_strategy: strategy
       ).call
 
@@ -301,7 +301,7 @@ module EventEngine
 
       transport = EventEngine::Transports::InMemoryTransport.new
 
-      EventEngine::OutboxPublisher.new(transport: transport).call
+      EventEngine::OutboxPublisher.new(router: OutboxRouter.new(transport: transport)).call
 
       assert_not_nil event.reload.published_at
     end
