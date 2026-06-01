@@ -166,8 +166,8 @@ class SendWelcomeEmail < EventEngine::Subscriber
   subscribes_to :user_registered
 
   def handle(event)
-    # payload keys are strings at every level
-    UserMailer.welcome(event.payload["user_id"]).deliver_later
+    # event is an EventEngine::Event with a symbol-keyed payload at every level
+    UserMailer.welcome(event.payload[:user_id]).deliver_later
   end
 end
 ```
