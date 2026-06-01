@@ -10,6 +10,7 @@ module EventEngine
     # @param max_attempts [Integer, nil] max attempts before dead-lettering
     def initialize(transport:, batch_size: nil, max_attempts: nil, locking_strategy: nil)
       @transport = transport
+      @router = OutboxRouter.new(transport: transport)
       @batch_size = batch_size
       @max_attempts = max_attempts
       @locking_strategy = locking_strategy || LockingStrategy.for_current_adapter
@@ -46,7 +47,7 @@ module EventEngine
     end
 
     def publish_event(event)
-      @transport.publish(event)
+      @router.route(event)
       event.update!(published_at: Time.current)
 
       ActiveSupport::Notifications.instrument("event_engine.event_published", {
