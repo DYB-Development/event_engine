@@ -71,6 +71,12 @@ a level-5 event raises `UnsupportedLevelError`.
 Keep subscribers idempotent and free of request-context assumptions, so moving an
 event up a level later doesn't require rewriting them.
 
+**Signals to move up a level** — let the problem, not a guess, drive the upgrade:
+
+- A synchronous (level 1) subscriber is slow or on the request hot path → **1 → 2**: defer it to a background job so the caller stops waiting.
+- Work is being lost across crashes, restarts, or deploys → **2 → 3**: capture in the outbox so the reaction survives and is atomic with your write.
+- An independent service needs to consume the event on its own deploy cycle → **3 → 4**: publish it to the external broker.
+
 ---
 
 ### Emitting events
