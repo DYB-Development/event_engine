@@ -29,5 +29,13 @@ module EventEngine
 
       assert_equal [event], transport.events
     end
+
+    test "raises for an unsupported level 5 event" do
+      event = FakeEvent.new(event_name: :ledger_entry, event_level: 5)
+
+      assert_raises(EventEngine::OutboxRouter::UnsupportedLevelError) do
+        OutboxRouter.new(transport: nil).route(event)
+      end
+    end
   end
 end
