@@ -30,6 +30,15 @@ module EventEngine
       assert_equal [event], transport.events
     end
 
+    test "routes a legacy nil-level event to the broker transport" do
+      transport = EventEngine::Transports::InMemoryTransport.new
+      event = FakeEvent.new(event_name: :legacy_event, event_level: nil)
+
+      OutboxRouter.new(transport: transport).route(event)
+
+      assert_equal [event], transport.events
+    end
+
     test "raises for an unsupported level 5 event" do
       event = FakeEvent.new(event_name: :ledger_entry, event_level: 5)
 

@@ -4,6 +4,7 @@ module EventEngine
   # - level 3 → invokes the event's in-process subscribers (durable, async)
   # - level 4 → publishes through the configured broker transport
   # - level 5 → unsupported
+  # - no level (legacy events) → publishes through the configured transport
   #
   # Levels 1 and 2 never reach the outbox, so they are not handled here.
   class OutboxRouter
@@ -22,14 +23,14 @@ module EventEngine
     # @return [void]
     def route(event)
       case event.event_level
-      when 4
-        @transport.publish(event)
-      when 5
-        raise UnsupportedLevelError, "event_level 5 (event sourcing) is not supported"
-      else
+      when 3
         SubscriberRegistry.subscribers_for(event.event_name).each do |subscriber|
           subscriber.new.handle(event)
         end
+      when 5
+        raise UnsupportedLevelError, "event_level 5 (event sourcing) is not supported"
+      else
+        @transport.publish(event)
       end
     end
   end
