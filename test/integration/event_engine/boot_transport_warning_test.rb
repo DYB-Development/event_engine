@@ -17,9 +17,11 @@ class BootTransportWarningTest < ActiveSupport::TestCase
 
     original = EventEngine.configuration.instance_variable_get(:@logger)
     original_transport = EventEngine.configuration.transport
+    original_adapter = EventEngine.configuration.delivery_adapter
     io = StringIO.new
     EventEngine.configuration.instance_variable_set(:@logger, Logger.new(io))
     EventEngine.configuration.transport = EventEngine::Transports::NullTransport.new
+    EventEngine.configuration.delivery_adapter = :inline
 
     EventEngine.boot_from_schema!(
       schema_path: schema_file.path,
@@ -30,5 +32,6 @@ class BootTransportWarningTest < ActiveSupport::TestCase
   ensure
     EventEngine.configuration.instance_variable_set(:@logger, original)
     EventEngine.configuration.transport = original_transport
+    EventEngine.configuration.delivery_adapter = original_adapter
   end
 end
