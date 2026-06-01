@@ -17,5 +17,17 @@ module EventEngine
 
       assert_equal 1, received.size
     end
+
+    test "gives the subscriber a symbol-keyed payload from string-keyed attrs" do
+      received = []
+      Class.new(Subscriber) do
+        subscribes_to :cow_mooed
+        define_method(:handle) { |event| received << event.payload }
+      end
+
+      DispatchSubscribersJob.perform_now("cow_mooed", { "event_name" => "cow_mooed", "payload" => { "weight" => 500 } })
+
+      assert_equal({ weight: 500 }, received.first)
+    end
   end
 end

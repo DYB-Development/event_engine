@@ -81,7 +81,7 @@ module EventEngine
       assert_equal 1, received.size
     end
 
-    test "level 1 subscriber receives a string-keyed payload" do
+    test "level 1 subscriber receives a symbol-keyed payload" do
       received = []
       Class.new(Subscriber) do
         subscribes_to :cow_observed
@@ -137,7 +137,7 @@ module EventEngine
       assert_instance_of EventEngine::Event, result
     end
 
-    test "level 2 subscriber receives a string-keyed payload" do
+    test "level 2 subscriber receives a symbol-keyed payload" do
       received = []
       Class.new(Subscriber) do
         subscribes_to :cow_mooed
