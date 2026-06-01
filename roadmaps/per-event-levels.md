@@ -1,115 +1,104 @@
-# Per-Event Levels — Implementation Plan
+# Per-Event Levels — As Built
 
-Status: **Phase 1 in design**
+Status: **Phase 1 complete** (levels 1–4 working; level 5 unsupported).
 
 Source proposal: `~/projects/other/dyb_docs/gems/event_engine/per-event-levels.md`.
-This note is the repo-side, build-facing plan. Where the source proposal is
-ambiguous, the **Decisions** section below is authoritative.
+This note records the design as built. Where it diverges from the source
+proposal, this note is authoritative.
 
 ## Goal
 
-Let each event declare its position on the event-system level ladder via
-`event_level` (already added in #68), and have the framework route it
-accordingly — so moving an event up a level is a **one-line change to its
-definition**, not a rewrite. Producer code never changes
-(`EventEngine.sale_processed(sale:)` is identical at every level).
+Each event declares its position on the event-system level ladder via
+`event_level`, and the framework routes it accordingly — so moving an event up
+a level is a **one-line change to its definition**, not a rewrite. Producer code
+never changes: `EventEngine.sale_processed(sale:)` is identical at every level.
 
 ## The level ladder, in EventEngine terms
 
-`event_level` is declared **per `EventDefinition`**. The system runs a mix of
-levels at once; the level decides an event's path, not a global mode.
+`event_level` is declared **per `EventDefinition`** (a number, 1–5). The system
+runs a mix of levels at once; the level decides an event's path, not a global
+mode. Levels 1–3 invoke in-process **subscribers**; level 4 publishes to a
+broker transport.
 
-| Level | Outbox? | Capture (emit-time) | Delivery (specified transport) |
+| Level | Outbox? | Subscribers run | Configuration needed |
 |---|---|---|---|
-| **1** | No | sync, in-process | in-memory sink |
-| **2** | No | async via background job | in-memory / local-queue sink |
-| **3** | **Yes** | write outbox → local async drain | local / in-memory sink |
-| **4** | **Yes** | write outbox → drain | **Kafka** (specifiable) |
-| **5** | Yes (source of truth) | outbox retained as history | event-sourced / replay |
+| **1** | No | synchronously, in the caller's stack | none |
+| **2** | No | in a background job (ActiveJob) | a job backend |
+| **3** | **Yes** | when the outbox is drained (durable) | outbox migration |
+| **4** | **Yes** | not run — event is published to a broker | outbox migration + a transport |
+| **5** | — | — | unsupported (raises) |
+
+The break point is **3 → 4**: levels 1–3 are in-process subscribers with
+increasing durability; level 4 is where events leave the process to a broker and
+consumers become separate services.
 
 ## Decisions (locked)
 
-1. **Outbox is the floor for level ≥ 3.** Every level 3+ event captures to the
-   outbox. What you *specify* per event is the transport it drains to.
-2. **Level 4 = outbox + Kafka**, not Kafka-instead-of-outbox. The source
-   proposal's `4 => Kafka` route is misleading; level 4 still goes through the
-   outbox, then drains to the specified transport (Kafka is the obvious choice).
-3. **Straight-to-broker with no outbox is NOT a level — it's telemetry.** The
-   lossy, non-durable, `acks=0`/sink path is the separate `telemetry true` mode
-   (source proposal §"Telemetry"). Out of scope for Phase 1.
-4. **`event_level` is per `EventDefinition`** (number 1–5, excluded from the
-   schema fingerprint — established in #68).
+1. **Levels 1–3 invoke subscribers; level 4 publishes to a transport.** Per the
+   ladder, level 3 is "durable in-process — worker reads outbox, runs
+   subscribers." Only level 4 needs an external transport (e.g. Kafka).
+2. **Outbox is the floor for level ≥ 3.** Levels 1–2 never touch the outbox;
+   levels 3–4 always capture to it (in the producer's transaction).
+3. **`event_level` is per `EventDefinition`** (excluded from the schema
+   fingerprint — a level change is routing, not a contract change).
+4. **Configuration is required only for the levels an app uses.** Level 1 needs
+   nothing; level 2 a job backend; level 3 the outbox migration; level 4 the
+   outbox plus a transport. Apps using only levels 1–2 never run the outbox
+   migration.
+5. **Missing level-4 transport: warn early, raise late.** At boot,
+   `DefinitionTransportCheck` logs a non-blocking warning if a level-4 event
+   exists with no real transport. At runtime, `OutboxRouter` raises
+   `MissingTransportError` when such an event is actually drained — so the host
+   app's error handling catches it without the app locking up at boot. A
+   `NullTransport` counts as "no transport."
+6. **Legacy events (no level) are unchanged.** They write the outbox and publish
+   to the configured transport exactly as before.
 
-## Architecture: two axes, two seams
+## Architecture: two seams
 
-The ladder has two independent axes — **capture** and **delivery** — and they
-are decided at two different points in the pipeline. This is intentional, not a
-split-logic smell.
+### Seam A — Capture (emit time, in `EventEmitter`)
 
-### Seam A — Capture (emit-time branch, in `EventEmitter`)
+`EventEmitter.emit` branches on `event_level`:
 
-Today `EventEmitter.emit` calls `OutboxWriter.write` **unconditionally**
-(`event_emitter.rb`), which is exactly why a transport-layer router (the closed
-#69) was inert — it only ever saw already-outboxed events.
+- **level 1** → `dispatch_synchronously`: build the event, invoke its
+  subscribers inline, return a non-persisted `Event`. No outbox.
+- **level 2** → `dispatch_in_background`: enqueue `DispatchSubscribersJob`,
+  return a non-persisted `Event`. No outbox.
+- **level ≥ 3 (and legacy nil)** → `OutboxWriter.write`; the publisher drains it
+  later.
 
-The fix: the emitter consults the event's `event_level` and branches on capture:
+### Seam B — Drain routing (publish time, in `OutboxRouter`)
 
-- **level ≤ 2** → do **not** write the outbox; dispatch the built event directly
-  (level 1 sync; level 2 via background job).
-- **level ≥ 3** → `OutboxWriter.write` as today; the publisher drains it later.
+`OutboxPublisher` drains outbox rows and hands each to an injected
+`OutboxRouter`, which routes by the row's `event_level`:
 
-### Seam B — Delivery (publish-time routing, after the outbox drain)
+- **level 3** → invoke the event's subscribers (`SubscriberRegistry`).
+- **level 4** → `transport.publish` (raises `MissingTransportError` if no real
+  transport).
+- **level 5** → raise `UnsupportedLevelError`.
+- **legacy nil** → `transport.publish`.
 
-For outbox-backed events only (≥ 3), the `OutboxPublisher` drains rows and hands
-each event to its **specified transport**. A level→transport router lives here
-and *only ever sees ≥ 3 events* — which is what makes it coherent (and is why it
-was meaningless as a global `config.transport` in #69).
+The publisher depends only on `#route`; the transport is composed into the
+router from outside, so the publisher knows nothing about transports.
 
-## Open questions (decide before the slice that needs them — do NOT guess)
+## Key components
 
-- **OQ1 — Level 3 delivery target.** EventEngine has **no in-process subscriber
-  bus** (ROADMAP #45 — in-process hooks are `ActiveSupport::Notifications`;
-  consumers are out of scope by the producer-side-only principle). So what does
-  a level-3 event drain *to*? Candidate answers: an `InMemoryTransport` that
-  just collects; or we accept that "level 3 local processing" in this gem means
-  "durable capture + drain to a configured local transport," with actual
-  fan-out still the consumer's job. **Needs a decision before building level 3.**
-- **OQ2 — How a ≥ 3 event specifies its transport.** Options: (a) a per-event
-  DSL field on the definition; (b) a global `LevelRouter` map (level→transport)
-  consulted by the publisher; (c) both. The source proposal shows (b).
-- **OQ3 — Interaction with the existing global `delivery_adapter`
-  (`:inline` / `:active_job`) and `config.transport`.** Level 2's "async via
-  background job" overlaps with `delivery_adapter: :active_job`. Does
-  `event_level` subsume `delivery_adapter`, or layer on top of it? Must be
-  pinned before level 2.
-- **OQ4 — Level 5 (event sourcing / replay).** Large; treat as future, out of
-  Phase 1.
-- **OQ5 — Namespace defaults** (source proposal §2). Defer past Phase 1.
+- **`Subscriber`** — base class; `subscribes_to :event_name` self-registers the
+  subclass at load time. Implements `#handle(event)`.
+- **`SubscriberRegistry`** — maps event names to subscriber classes.
+- **`Event`** — non-persisted value object passed to subscribers and returned by
+  levels 1–2.
+- **`DispatchSubscribersJob`** — ActiveJob job that invokes subscribers (level 2).
+- **`OutboxRouter`** — drain-time dispatch by level.
+- **`DefinitionTransportCheck`** — boot-time level-4 transport warning.
 
-## Resequenced Phase 1 (corrects #69's ordering)
+## Out of scope
 
-Each slice lands something that actually does work, and is built strict-TDD
-(one assertion per test, one behavior per commit, ≤ 2 files per commit).
-
-1. **✅ `event_level` DSL** — #68, merged.
-2. **Emit-time capture branch** — `EventEmitter` writes the outbox only for
-   level ≥ 3; level ≤ 2 skips it. *The linchpin.* First failing test: a level-1
-   event emits **no** `OutboxEvent` row. (Resolve OQ3 for the level-2 async path
-   before that sub-slice.)
-3. **`OutboxTransport`** — extract the existing publisher/drain logic into a
-   transport so the outbox is per-event addressable rather than the hardcoded
-   floor (level 3). (Resolve OQ1 first.)
-4. **`LocalQueueTransport`** (level 2) — background-job dispatch, no outbox.
-5. **`LevelRouter`** (delivery seam) — route drained ≥ 3 events to their
-   specified transport. Reuse the unit from the closed `feat/level-router`
-   branch; now it has real destinations and a correct position. Add the
-   end-to-end smoke test here (deferred from #69).
-
-## Out of scope for Phase 1
-
-- Telemetry mode (`telemetry true`, `sample_rate`, `buffer_size`, sinks).
-- Observability metrics + `event_engine:report` / `check_upgrade_signals`
-  (source proposal Phase 2).
-- Decision-support tooling: `simulate_upgrade`, `dependencies`,
-  `upgrade_to_level` trigger registry (source proposal Phases 3–4).
-- Namespace defaults; level 5 / event sourcing.
+- **Telemetry mode** (`telemetry true`, sampling, buffering, sinks) — the
+  separate lossy, non-durable pattern from the source proposal.
+- **Level 5 / event sourcing** — replay, temporal queries, read models. A
+  paradigm shift, not a transport choice; currently raises.
+- **Observability + decision tooling** — `event_engine:report`,
+  `simulate_upgrade`, `dependencies`, `upgrade_to_level` (source proposal
+  Phases 2–4).
+- **Namespace defaults** — per-namespace `event_type` / `event_level` defaults.
