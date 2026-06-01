@@ -22,14 +22,22 @@ module EventEngine
       registry
     end
 
-    def capture_log
+    def capture_log(registry:, transport:)
       io = StringIO.new
-      DefinitionTransportCheck.run(registry: registry_with_level(4), transport: Transports::NullTransport.new, logger: Logger.new(io))
+      DefinitionTransportCheck.run(registry: registry, transport: transport, logger: Logger.new(io))
       io.string
     end
 
     test "warns when a level 4 event has no real transport configured" do
-      assert_match(/sale_processed/, capture_log)
+      output = capture_log(registry: registry_with_level(4), transport: Transports::NullTransport.new)
+
+      assert_match(/sale_processed/, output)
+    end
+
+    test "stays silent when a real transport is configured" do
+      output = capture_log(registry: registry_with_level(4), transport: Transports::InMemoryTransport.new)
+
+      assert_equal "", output
     end
   end
 end
