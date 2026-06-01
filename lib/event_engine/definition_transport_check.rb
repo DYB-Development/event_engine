@@ -22,7 +22,7 @@ module EventEngine
     end
 
     def self.real_transport?(transport)
-      !transport.nil? && !transport.is_a?(Transports::NullTransport)
+      !transport.nil? && !(transport.respond_to?(:null?) && transport.null?)
     end
     private_class_method :real_transport?
   end
