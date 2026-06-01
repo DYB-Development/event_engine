@@ -130,5 +130,15 @@ module EventEngine
         )
       end
     end
+
+    test "level 3 event persists its level on the outbox row" do
+      event = EventEmitter.emit(
+        event_name: :cow_milked,
+        data: { cow: OpenStruct.new(weight: 500) },
+        registry: @registry
+      )
+
+      assert_equal 3, event.event_level
+    end
   end
 end
