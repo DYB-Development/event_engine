@@ -51,6 +51,8 @@ module EventEngine
 
     teardown do
       SubscriberRegistry.clear!
+      clear_enqueued_jobs
+      clear_performed_jobs
     end
 
     test "level 1 event does not write an outbox row" do
@@ -79,6 +81,16 @@ module EventEngine
       )
 
       assert_equal 1, received.size
+    end
+
+    test "level 1 event has a symbol-keyed payload" do
+      event = EventEmitter.emit(
+        event_name: :cow_observed,
+        data: { cow: OpenStruct.new(weight: 500) },
+        registry: @registry
+      )
+
+      assert_equal({ weight: 500 }, event.payload)
     end
 
     test "level 1 emit returns a non-persisted event object" do
@@ -119,6 +131,24 @@ module EventEngine
       )
 
       assert_instance_of EventEngine::Event, result
+    end
+
+    test "level 2 subscriber receives a symbol-keyed payload" do
+      received = []
+      Class.new(Subscriber) do
+        subscribes_to :cow_mooed
+        define_method(:handle) { |event| received << event.payload }
+      end
+
+      perform_enqueued_jobs do
+        EventEmitter.emit(
+          event_name: :cow_mooed,
+          data: { cow: OpenStruct.new(weight: 500) },
+          registry: @registry
+        )
+      end
+
+      assert_equal({ weight: 500 }, received.first)
     end
 
     test "level 3 event writes an outbox row" do

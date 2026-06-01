@@ -27,7 +27,8 @@ module EventEngine
 
     private
 
-    def notify_subscribers(event)
+    def notify_subscribers(record)
+      event = Event.from(record)
       SubscriberRegistry.subscribers_for(event.event_name).each do |subscriber|
         subscriber.new.handle(event)
       end

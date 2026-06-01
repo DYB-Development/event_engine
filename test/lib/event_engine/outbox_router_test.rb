@@ -6,7 +6,9 @@ module EventEngine
       SubscriberRegistry.clear!
     end
 
-    FakeEvent = Struct.new(:event_name, :event_level, keyword_init: true)
+    def fake_event(event_name:, event_level:, payload: {})
+      EventEngine::Event.new(event_name: event_name, event_level: event_level, payload: payload)
+    end
 
     test "routes a level 3 event to its subscribers" do
       received = []
@@ -16,14 +18,14 @@ module EventEngine
       end
 
       router = OutboxRouter.new(transport: nil)
-      router.route(FakeEvent.new(event_name: :cow_milked, event_level: 3))
+      router.route(fake_event(event_name: :cow_milked, event_level: 3))
 
       assert_equal 1, received.size
     end
 
     test "routes a level 4 event to the broker transport" do
       transport = EventEngine::Transports::InMemoryTransport.new
-      event = FakeEvent.new(event_name: :sale_processed, event_level: 4)
+      event = fake_event(event_name: :sale_processed, event_level: 4)
 
       OutboxRouter.new(transport: transport).route(event)
 
@@ -32,7 +34,7 @@ module EventEngine
 
     test "routes a legacy nil-level event to the broker transport" do
       transport = EventEngine::Transports::InMemoryTransport.new
-      event = FakeEvent.new(event_name: :legacy_event, event_level: nil)
+      event = fake_event(event_name: :legacy_event, event_level: nil)
 
       OutboxRouter.new(transport: transport).route(event)
 
@@ -40,7 +42,7 @@ module EventEngine
     end
 
     test "raises a clear error for a level 4 event when no transport is configured" do
-      event = FakeEvent.new(event_name: :sale_processed, event_level: 4)
+      event = fake_event(event_name: :sale_processed, event_level: 4)
 
       assert_raises(EventEngine::OutboxRouter::MissingTransportError) do
         OutboxRouter.new(transport: nil).route(event)
@@ -48,7 +50,7 @@ module EventEngine
     end
 
     test "raises for a level 4 event when transport is the null transport" do
-      event = FakeEvent.new(event_name: :sale_processed, event_level: 4)
+      event = fake_event(event_name: :sale_processed, event_level: 4)
 
       assert_raises(EventEngine::OutboxRouter::MissingTransportError) do
         OutboxRouter.new(transport: Transports::NullTransport.new).route(event)
@@ -56,7 +58,7 @@ module EventEngine
     end
 
     test "raises for an unsupported level 5 event" do
-      event = FakeEvent.new(event_name: :ledger_entry, event_level: 5)
+      event = fake_event(event_name: :ledger_entry, event_level: 5)
 
       assert_raises(EventEngine::OutboxRouter::UnsupportedLevelError) do
         OutboxRouter.new(transport: nil).route(event)

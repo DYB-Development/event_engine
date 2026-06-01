@@ -30,5 +30,19 @@ module EventEngine
 
       assert_equal 1, received.size
     end
+
+    test "level 3 subscriber receives an Event with a symbol-keyed payload" do
+      received = []
+      Class.new(Subscriber) do
+        subscribes_to :"cow.milked"
+        define_method(:handle) { |event| received << event }
+      end
+      build_event(event_level: 3, payload: { amount: 5 })
+
+      OutboxPublisher.new(router: OutboxRouter.new(transport: EventEngine::Transports::InMemoryTransport.new)).call
+
+      assert_instance_of EventEngine::Event, received.first
+      assert_equal({ amount: 5 }, received.first.payload)
+    end
   end
 end

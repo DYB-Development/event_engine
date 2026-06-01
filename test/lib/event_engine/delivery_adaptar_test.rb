@@ -4,6 +4,14 @@ class DeliveryAdapterTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
   include ActiveJob::TestHelper
 
+  setup do
+    @original_delivery_adapter = EventEngine.configuration.delivery_adapter
+  end
+
+  teardown do
+    EventEngine.configuration.delivery_adapter = @original_delivery_adapter
+  end
+
   test "inline adapter publishes immediately" do
     called = false
 
