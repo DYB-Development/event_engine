@@ -91,6 +91,12 @@ module EventEngine
 
       install_helpers(registry: registry)
 
+      DefinitionTransportCheck.run(
+        registry: registry,
+        transport: configuration.transport,
+        logger: configuration.logger
+      )
+
       event_schema
     end
 
