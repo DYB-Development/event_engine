@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Per-event levels** — Each event can declare an `event_level` (1–5) that decides how it is delivered, without changing producer code.
+  - Levels 1–3 invoke in-process subscribers with increasing durability: level 1 synchronously, level 2 via a background job, level 3 durably when the outbox is drained
+  - Level 4 publishes to a broker transport; level 5 (event sourcing) is unsupported and raises
+  - `Subscriber` base class with `subscribes_to` for self-registering event handlers, backed by `SubscriberRegistry`
+  - `OutboxRouter` routes drained outbox events to subscribers or the transport by level
+  - `DispatchSubscribersJob` runs level-2 subscribers in the background
+  - Level-4 transport safety: warns at boot (`DefinitionTransportCheck`) and raises `OutboxRouter::MissingTransportError` at publish time when no transport is configured; `NullTransport` counts as unconfigured
+  - Events with no `event_level` keep the existing outbox-and-transport behavior
+
 - **Cloud Reporter** — Optional module that sends event metadata to EventEngine Cloud for observability. Activated by setting `cloud_api_key` in configuration. Zero impact when unconfigured.
   - `Cloud::Serializer` — Converts event notifications to metadata-only entries (never sends payloads)
   - `Cloud::Batch` — Thread-safe entry accumulator with configurable max size

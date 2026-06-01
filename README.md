@@ -125,6 +125,67 @@ You can optionally set:
 
 ---
 
+## Per-event levels
+
+Each event can declare an `event_level` (1–5) describing where it sits on the
+event-system maturity ladder. The level decides how the event is delivered —
+**producer code never changes**, so moving an event up a level is a one-line
+edit to its definition.
+
+```ruby
+class AppStarted < EventEngine::EventDefinition
+  event_name :app_started
+  event_type :system
+  event_level 1
+end
+```
+
+| Level | Outbox? | What happens | You configure |
+|---|---|---|---|
+| **1** | No | subscribers run synchronously, in the caller's stack | nothing |
+| **2** | No | subscribers run in a background job (ActiveJob) | a job backend |
+| **3** | Yes | subscribers run when the outbox is drained (durable) | the outbox migration |
+| **4** | Yes | the event is published to a broker transport (e.g. Kafka) | the outbox migration + a transport |
+| **5** | — | not supported (event sourcing) — raises | — |
+
+Levels 1–3 invoke in-process **subscribers** with increasing durability. Level 4
+leaves the process to a broker, where consumers are separate services. Events
+with no `event_level` keep the original behavior: written to the outbox and
+published to the configured transport.
+
+> Only levels 3+ use the outbox, so an app using only levels 1–2 does not need
+> the outbox migration.
+
+### Subscribers
+
+A subscriber is a class that reacts to an event in-process (levels 1–3). Declare
+the event it handles with `subscribes_to`; it self-registers at load time.
+
+```ruby
+class SendWelcomeEmail < EventEngine::Subscriber
+  subscribes_to :user_registered
+
+  def handle(event)
+    # event responds to event_name, event_type, payload, metadata, ...
+    UserMailer.welcome_for(event).deliver_later
+  end
+end
+```
+
+The same subscriber works at any in-process level — upgrading `event_level` from
+1 to 3 does not touch this code. Subscribers should be idempotent (they may be
+re-invoked on retries at level 3+).
+
+### Level 4 transport
+
+A level-4 event needs a transport configured (see [Configuration](#configuration)).
+If one is missing, EventEngine logs a warning at boot and raises
+`EventEngine::OutboxRouter::MissingTransportError` when the event is actually
+published — so a misconfiguration surfaces loudly rather than silently dropping
+events. The default `NullTransport` counts as "no transport" for this check.
+
+---
+
 ## Configuration
 
 Add an initializer such as `config/initializers/event_engine.rb`:
