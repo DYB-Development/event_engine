@@ -34,12 +34,16 @@ module EventEngine
     end
 
     def deliver_to_broker(event)
-      unless @transport
+      if transport_missing?
         raise MissingTransportError,
               "event_level 4 event '#{event.event_name}' requires a transport, but none is configured"
       end
 
       publish(event)
+    end
+
+    def transport_missing?
+      @transport.nil? || (@transport.respond_to?(:null?) && @transport.null?)
     end
 
     def publish(event)

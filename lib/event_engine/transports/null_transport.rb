@@ -12,6 +12,11 @@ module EventEngine
         true
       end
 
+      # @return [Boolean] true, since this transport does not deliver anywhere
+      def null?
+        true
+      end
+
       private
 
       def logger
