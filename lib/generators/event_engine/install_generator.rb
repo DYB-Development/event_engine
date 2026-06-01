@@ -1,3 +1,5 @@
+require "event_engine/subagents"
+
 module EventEngine
   module Generators
     class InstallGenerator < Rails::Generators::Base
@@ -15,6 +17,14 @@ module EventEngine
 
       def create_initializer
         template "initializer.rb", "config/initializers/event_engine.rb"
+      end
+
+      def generate_subagents
+        say ""
+        say "Installing EventEngine Claude Code subagents...", :green
+        EventEngine::Subagents.names.each do |name|
+          create_file ".claude/agents/#{name}.md", EventEngine::Subagents.content_for(name), force: true
+        end
       end
 
       def print_next_steps
