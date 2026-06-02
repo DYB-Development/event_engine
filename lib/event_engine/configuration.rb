@@ -14,7 +14,7 @@ module EventEngine
 
     # @!attribute [rw] delivery_adapter
     #   How events are published after writing to the outbox.
-    #   @return [Symbol] +:inline+ (default) or +:active_job+
+    #   @return [Symbol] +:inline+ (default), +:active_job+, or +:manual+
 
     # @!attribute [rw] transport
     #   The transport used to publish events. Must respond to +#publish(event)+.
@@ -67,7 +67,7 @@ module EventEngine
     attr_accessor :delivery_adapter, :transport, :batch_size, :max_attempts, :retention_period, :dashboard_auth, :logger,
                   :cloud_api_key, :cloud_endpoint, :cloud_environment, :cloud_app_name, :cloud_batch_size, :cloud_flush_interval
 
-    VALID_DELIVERY_ADAPTERS = %i[inline active_job].freeze
+    VALID_DELIVERY_ADAPTERS = %i[inline active_job manual].freeze
 
     def initialize
       @delivery_adapter = :inline

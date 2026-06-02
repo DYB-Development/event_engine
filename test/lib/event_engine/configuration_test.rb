@@ -89,6 +89,12 @@ module EventEngine
       assert_nothing_raised { @config.validate! }
     end
 
+    test "validate! accepts the manual delivery adapter" do
+      @config.delivery_adapter = :manual
+
+      assert_nothing_raised { @config.validate! }
+    end
+
     test "validate! is called during boot_from_schema!" do
       EventEngine.configure do |c|
         c.delivery_adapter = :active_job
