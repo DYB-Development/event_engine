@@ -76,6 +76,22 @@ module EventEngine
       yield(configuration)
     end
 
+    def handler_registry
+      @handler_registry ||= HandlerRegistry.new
+    end
+
+    def register_handler(handler, levels:)
+      handler_registry.register(handler, levels: levels)
+    end
+
+    def dispatch(event)
+      handler_registry.dispatch(event)
+    end
+
+    def reset_handlers!
+      handler_registry.clear!
+    end
+
     # Loads a schema file, populates the registry, and installs helper methods.
     # Called automatically by the engine at Rails boot.
     #
