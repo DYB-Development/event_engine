@@ -41,17 +41,7 @@ module EventEngine
       assert EventEngine.respond_to?(:cow_fed)
     end
 
-    test "helper emits an OutboxEvent" do
-      cow = OpenStruct.new(weight: 500)
-
-      event = EventEngine.cow_fed(cow: cow)
-
-      assert event.persisted?
-      assert_equal "cow_fed", event.event_name
-      assert_equal({ "weight" => 500 }, event.payload)
-    end
-
-    test "helper passes aggregate fields through to emitter" do
+    test "helper passes aggregate fields through to the built event" do
       cow = OpenStruct.new(weight: 500)
 
       event = EventEngine.cow_fed(

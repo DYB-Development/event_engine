@@ -17,8 +17,6 @@ module EventEngine
             schema_path
           )
         end
-
-        Engine.send(:start_cloud_reporter!)
       end
     end
 
@@ -30,13 +28,6 @@ module EventEngine
           schema_path: schema_path,
           registry: EventEngine::SchemaRegistry.new
         )
-      end
-
-      def start_cloud_reporter!
-        return unless EventEngine.configuration.cloud_enabled?
-
-        Cloud::Subscribers.subscribe!(reporter: Cloud::Reporter.instance)
-        Cloud::Reporter.instance.start
       end
 
       def handle_missing_schema!(schema_path)

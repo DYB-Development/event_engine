@@ -1,13 +1,19 @@
 # EventEngine
 
-EventEngine is a Rails engine that provides a schema-first event pipeline with:
-- **Event definitions** in Ruby DSL.
+EventEngine is the schema-first **core** of the event pipeline:
+- **Event definitions** in a Ruby DSL.
 - **Schema generation** to a canonical `db/event_schema.rb`.
-- **Outbox storage** with a background publisher.
-- **Transport adapters** (in-memory or Kafka) for delivery.
+- **Generated helpers** that build a validated `Event` and **dispatch** it to
+  registered handlers by level.
 
-This README is optimized for humans and automated assistants. It includes a
-complete setup path, usage patterns, configuration, and known issues.
+Durable delivery — the outbox, transports, dead-letter handling, and the
+observability dashboard — lives in the companion gem
+[`event_engine-delivery`](https://github.com/tylercschneider/event_engine-delivery),
+which registers its pipeline as a handler. Add it when you need durable delivery.
+
+This README is optimized for humans and automated assistants. Some sections below
+still describe delivery behavior that now lives in `event_engine-delivery`; a fuller
+split of this document is in progress.
 
 ---
 

@@ -1,58 +1,35 @@
 require_relative "event_engine/version"
 
 require "event_engine/engine"
-require "event_engine/locking_strategy"
-require "event_engine/outbox_publisher"
-require "event_engine/transports/in_memory_transport"
-require "event_engine/transports/kafka"
-require "event_engine/transports/null_transport"
-require "event_engine/kafka_producer"
 require "event_engine/configuration"
 require "event_engine/event_definition"
-require "event_engine/event_emitter"
 require "event_engine/event_builder"
-require "event_engine/outbox_writer"
+require "event_engine/handler_registry"
 require "event_engine/event_schema"
 require "event_engine/schema_registry"
 require "event_engine/event"
 require "event_engine/subscriber_registry"
 require "event_engine/subscriber"
-require "event_engine/outbox_router"
-require "event_engine/definition_transport_check"
 require "event_engine/dsl_compiler"
 require "event_engine/event_schema_loader"
 require "event_engine/event_schema_writer"
 require "event_engine/event_schema_merger"
 require "event_engine/event_schema_dumper"
-require "event_engine/delivery"
 require "event_engine/schema_drift_guard"
 require "event_engine/railtie"
 require "event_engine/definition_loader"
-require "event_engine/cloud/serializer"
-require "event_engine/cloud/batch"
-require "event_engine/cloud/api_client"
-require "event_engine/cloud/subscribers"
-require "event_engine/cloud/reporter"
 
-# EventEngine is a Rails engine providing a schema-first event pipeline.
+# EventEngine is the schema-first core of the event pipeline.
 #
-# Events are defined via a Ruby DSL, compiled into a canonical schema file,
-# persisted to an outbox table, and delivered through pluggable transports.
+# Events are defined via a Ruby DSL and compiled into a canonical schema file.
+# At boot, a helper method is installed on this module for each registered event
+# (e.g. +EventEngine.cow_fed(cow: cow)+); the helper validates inputs, builds an
+# +Event+, and dispatches it to registered handlers by level. Companion gems
+# (e.g. event_engine-delivery) register handlers to process the events.
 #
-# At boot, helper methods are installed on this module for each registered
-# event (e.g. +EventEngine.cow_fed(cow: cow)+).
-#
-# @example Configure and emit an event
-#   EventEngine.configure do |config|
-#     config.transport = EventEngine::Transports::InMemoryTransport.new
-#   end
-#
+# @example Define, build, and dispatch an event
+#   EventEngine.register_handler(MyHandler, levels: 1..4)
 #   EventEngine.cow_fed(cow: cow, occurred_at: Time.current)
-#
-# @example Enable Cloud Reporter
-#   EventEngine.configure do |config|
-#     config.cloud_api_key = ENV["EVENT_ENGINE_CLOUD_KEY"]
-#   end
 module EventEngine
   mattr_accessor :_installed_event_helpers, default: Set.new
   class << self
@@ -68,11 +45,26 @@ module EventEngine
     # @yieldparam config [Configuration] the configuration instance
     # @example
     #   EventEngine.configure do |config|
-    #     config.delivery_adapter = :active_job
-    #     config.transport = MyTransport.new
+    #     config.logger = Rails.logger
     #   end
     def configure
       yield(configuration)
+    end
+
+    def handler_registry
+      @handler_registry ||= HandlerRegistry.new
+    end
+
+    def register_handler(handler, levels:)
+      handler_registry.register(handler, levels: levels)
+    end
+
+    def dispatch(event)
+      handler_registry.dispatch(event)
+    end
+
+    def reset_handlers!
+      handler_registry.clear!
     end
 
     # Loads a schema file, populates the registry, and installs helper methods.
@@ -81,21 +73,13 @@ module EventEngine
     # @param schema_path [String, Pathname] path to the compiled schema file
     # @param registry [SchemaRegistry] the registry to populate
     # @return [EventSchema] the loaded schema
-    # @raise [Configuration::InvalidConfigurationError] if configuration is invalid
     def boot_from_schema!(schema_path:, registry:)
-      configuration.validate!
       event_schema = EventSchemaLoader.load(schema_path)
 
       registry.reset!
       registry.load_from_schema!(event_schema)
 
       install_helpers(registry: registry)
-
-      DefinitionTransportCheck.run(
-        registry: registry,
-        transport: configuration.transport,
-        logger: configuration.logger
-      )
 
       event_schema
     end
@@ -134,18 +118,17 @@ module EventEngine
           unknown = args.keys - input_keys
           raise ArgumentError, "Unknown inputs: #{unknown.join(', ')}" if unknown.any?
 
-          EventEmitter.emit(
-            event_name: event_name,
-            data: inputs,
-            registry: registry,
-            version: event_version,
-            occurred_at: occurred_at,
-            metadata: metadata,
-            idempotency_key: idempotency_key,
-            aggregate_type: aggregate_type,
-            aggregate_id: aggregate_id,
-            aggregate_version: aggregate_version
-          )
+          schema = registry.schema(event_name, version: event_version)
+          attrs = EventBuilder.build(schema: schema, data: inputs)
+          attrs[:occurred_at] = occurred_at || Time.current
+          attrs[:metadata] = metadata
+          attrs[:idempotency_key] = idempotency_key || SecureRandom.uuid
+          attrs[:aggregate_type] = aggregate_type
+          attrs[:aggregate_id] = aggregate_id
+          attrs[:aggregate_version] = aggregate_version
+          attrs[:event_level] = schema.event_level
+
+          EventEngine.dispatch(Event.new(**attrs))
         end
 
         _installed_event_helpers << event_name
