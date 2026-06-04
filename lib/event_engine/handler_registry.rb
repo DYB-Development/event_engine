@@ -15,5 +15,9 @@ module EventEngine
       end
       event
     end
+
+    def clear!
+      @handlers.clear
+    end
   end
 end

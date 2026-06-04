@@ -37,4 +37,15 @@ class EventEngine::HandlerRegistryTest < ActiveSupport::TestCase
 
     assert_same event, registry.dispatch(event)
   end
+
+  test "clear! removes registrations" do
+    registry = EventEngine::HandlerRegistry.new
+    received = []
+    registry.register(->(event) { received << event }, levels: :all)
+    registry.clear!
+
+    registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, event_level: 1, payload: {}))
+
+    assert_empty received
+  end
 end
