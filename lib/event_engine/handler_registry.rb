@@ -10,7 +10,8 @@ module EventEngine
 
     def dispatch(event)
       @handlers.each do |registration|
-        registration[:handler].call(event) if registration[:levels].include?(event.event_level)
+        levels = registration[:levels]
+        registration[:handler].call(event) if levels == :all || levels.include?(event.event_level)
       end
     end
   end

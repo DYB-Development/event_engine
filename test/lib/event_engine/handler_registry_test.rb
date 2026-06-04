@@ -20,4 +20,14 @@ class EventEngine::HandlerRegistryTest < ActiveSupport::TestCase
 
     assert_empty received
   end
+
+  test "an :all handler receives an event of any level" do
+    registry = EventEngine::HandlerRegistry.new
+    received = []
+    registry.register(->(event) { received << event }, levels: :all)
+
+    registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, event_level: 0, payload: {}))
+
+    assert_equal 1, received.size
+  end
 end
