@@ -7,5 +7,15 @@ module EventEngine
 
       assert_equal :durable, schema.process_type
     end
+
+    test "explicit process_type is preserved over legacy event_level" do
+      schema = EventDefinition::Schema.new(
+        event_name: :cow_fed,
+        event_level: 3,
+        process_type: :broker
+      )
+
+      assert_equal :broker, schema.process_type
+    end
   end
 end
