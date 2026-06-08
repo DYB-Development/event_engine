@@ -70,6 +70,10 @@ module EventEngine
       def event_level(value)
         @event_level = value
       end
+
+      def process_type(value)
+        @process_type = value
+      end
     end
   end
 end
