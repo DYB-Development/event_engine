@@ -18,5 +18,10 @@ module EventEngine
 
       assert_equal expected, ProcessType.all.to_h { |type| [type, ProcessType.processor_for(type)] }
     end
+
+    test "known? reports whether a symbol is a known process type" do
+      assert ProcessType.known?(:broker)
+      refute ProcessType.known?(:bogus)
+    end
   end
 end

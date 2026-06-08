@@ -18,5 +18,9 @@ module EventEngine
     def self.processor_for(type)
       PROCESSORS[type]
     end
+
+    def self.known?(type)
+      ALL.include?(type)
+    end
   end
 end
