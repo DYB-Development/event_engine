@@ -23,10 +23,5 @@ module EventEngine
       assert ProcessType.known?(:broker)
       refute ProcessType.known?(:bogus)
     end
-
-    test "from_event_level maps legacy integer levels to process types" do
-      assert_equal %i[inline background durable broker sourced],
-                   [1, 2, 3, 4, 5].map { |level| ProcessType.from_event_level(level) }
-    end
   end
 end

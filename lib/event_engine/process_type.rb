@@ -22,17 +22,5 @@ module EventEngine
     def self.known?(type)
       ALL.include?(type)
     end
-
-    LEGACY_EVENT_LEVELS = {
-      1 => :inline,
-      2 => :background,
-      3 => :durable,
-      4 => :broker,
-      5 => :sourced
-    }.freeze
-
-    def self.from_event_level(level)
-      LEGACY_EVENT_LEVELS[level]
-    end
   end
 end
