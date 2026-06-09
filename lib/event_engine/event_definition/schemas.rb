@@ -21,11 +21,6 @@ module EventEngine
         keyword_init: true
       )
 
-        def initialize(*)
-          super
-          self.process_type ||= ProcessType.from_event_level(event_level)
-        end
-
         # Returns a SHA256 fingerprint of the schema's canonical representation.
         # Used to detect schema changes and trigger version bumps.
         #
