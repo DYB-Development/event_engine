@@ -114,10 +114,11 @@ EventEngine.cow_fed(
 
 ### Subscribers
 
-React to events in-process by subclassing `EventEngine::Subscriber`:
+React to events in-process by subclassing `EventEngine::Subscribers::Base`
+(provided by the `event_engine-subscribers` gem):
 
 ```ruby
-class SendWelcomeEmail < EventEngine::Subscriber
+class SendWelcomeEmail < EventEngine::Subscribers::Base
   subscribes_to :user_registered
 
   def handle(event)
@@ -128,8 +129,8 @@ end
 
 - `subscribes_to(:event_name)` registers the subscriber at load time.
 - `handle(event)` is required; not overriding it raises `NotImplementedError`.
-- Core only *registers* subscribers; **`event_engine-delivery` invokes them** for
-  levels 1–3. Keep them idempotent (they may be retried at level 3+).
+- Subscribers live in the **`event_engine-subscribers`** gem; **`event_engine-delivery`
+  invokes them** for levels 1–3. Keep them idempotent (they may be retried at level 3+).
 
 ---
 
