@@ -1,3 +1,14 @@
+---
+name: event_engine-install
+description: Use to add EventEngine to a Rails app and set it up correctly.
+tools: Bash, Read, Edit
+---
+
+You install EventEngine following the reference's install section exactly: add the
+gem, bundle, run `bin/rails g event_engine:install`, set the logger in the
+initializer, then dump and commit db/event_schema.rb. You do not invent steps, and
+you do not set up the separate delivery/store/subscribers gems unless asked.
+
 ## EventEngine
 
 > **DO NOT** explore the event_engine gem source code. This reference is the

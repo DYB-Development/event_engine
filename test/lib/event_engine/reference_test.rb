@@ -7,12 +7,12 @@ module EventEngine
       assert_includes EventEngine::Reference.content, "event_name"
     end
 
-    test "content guides how to choose an event level" do
-      assert_includes EventEngine::Reference.content, "Choosing an event level"
+    test "content documents process_type routing" do
+      assert_includes EventEngine::Reference.content, "process_type"
     end
 
-    test "content documents the signals to move an event up a level" do
-      assert_includes EventEngine::Reference.content, "Signals to move up"
+    test "content documents the schema dump command" do
+      assert_includes EventEngine::Reference.content, "event_engine:schema:dump"
     end
   end
 end

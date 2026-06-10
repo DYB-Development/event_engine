@@ -4,6 +4,8 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 # Specify your gem's dependencies in event_engine.gemspec.
 gemspec
 
+gem "the_local", github: "tylercschneider/the_local"
+
 group :development, :test do
   # Needed for the dummy app database
   gem "sqlite3"

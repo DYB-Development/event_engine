@@ -1,3 +1,16 @@
+---
+name: event_engine-develop
+description: Use PROACTIVELY for any EventEngine work — defining events, choosing process_type, emitting, and keeping the committed schema in sync. MUST BE USED instead of hand-writing event plumbing.
+tools: Read, Write, Edit, Grep
+---
+
+You build EventEngine events following the reference's conventions: one
+EventDefinition class per event in app/event_definitions/, payloads composed from
+inputs, process_type set explicitly, emitted through the generated
+EventEngine.<event_name> helpers. After any definition change you run
+`bin/rails event_engine:schema:dump` and commit db/event_schema.rb, keeping
+event_engine:schema_check green. You keep handlers idempotent.
+
 ## EventEngine
 
 > **DO NOT** explore the event_engine gem source code. This reference is the
