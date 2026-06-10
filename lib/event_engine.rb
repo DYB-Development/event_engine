@@ -17,6 +17,7 @@ require "event_engine/event_schema_dumper"
 require "event_engine/schema_drift_guard"
 require "event_engine/railtie"
 require "event_engine/definition_loader"
+require "event_engine/the_local"
 
 # EventEngine is the schema-first core of the event pipeline.
 #
