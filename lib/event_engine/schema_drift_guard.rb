@@ -1,3 +1,5 @@
+require "event_engine/schema_diff"
+
 module EventEngine
   class SchemaDriftGuard
     class DriftError < StandardError; end
@@ -5,16 +7,17 @@ module EventEngine
     def self.check!(schema_path:, definitions:)
       raise DriftError, "Schema file does not exist: #{schema_path}" unless File.exist?(schema_path)
 
-      actual = File.read(schema_path)
-      expected = dump_to_string(definitions)
+      committed = File.read(schema_path)
+      regenerated = dump_to_string(definitions)
 
-      return true if actual == expected
+      return true if committed == regenerated
 
       raise DriftError, <<~MSG
         EventEngine schema drift detected.
 
         The DSL definitions do not match #{schema_path}.
 
+        #{SchemaDiff.new(expected: committed, actual: regenerated)}
         Run:
           bin/rails event_engine:schema:dump
 

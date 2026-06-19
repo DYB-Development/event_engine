@@ -9,6 +9,13 @@ class SchemaDriftGuardEnforcementTest < ActiveSupport::TestCase
     required_payload :weight, from: :cow, attr: :weight
   end
 
+  class Horse < EventEngine::EventDefinition
+    event_name :horse_fed
+    event_type :domain
+    input :horse
+    required_payload :weight, from: :horse, attr: :weight
+  end
+
   test "raises when DSL and schema file are out of sync" do
     file = Tempfile.new("event_schema.rb")
 
@@ -27,6 +34,28 @@ class SchemaDriftGuardEnforcementTest < ActiveSupport::TestCase
         definitions: [CowFed]
       )
     end
+  ensure
+    file.unlink
+  end
+
+  test "drift error includes a readable diff of the added field" do
+    file = Tempfile.new("event_schema.rb")
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [Horse],
+      path: file.path
+    )
+
+    Horse.required_payload :age, from: :horse, attr: :age
+
+    error = assert_raises(EventEngine::SchemaDriftGuard::DriftError) do
+      EventEngine::SchemaDriftGuard.check!(
+        schema_path: file.path,
+        definitions: [Horse]
+      )
+    end
+
+    assert_match(/\+.*age/, error.message)
   ensure
     file.unlink
   end
