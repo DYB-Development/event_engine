@@ -9,6 +9,7 @@ module EventEngine
       event_name :cow_fed
       event_type :domain
       process_type :broker
+      subject :feeding
 
       input :cow
       required_payload :weight, from: :cow, attr: :weight
@@ -16,6 +17,8 @@ module EventEngine
 
     setup do
       @helpers_snapshot = snapshot_event_engine_helpers
+
+      EventEngine.define_subjects { subject :feeding }
 
       compiled = DslCompiler.compile([ CowFed ])
       compiled.finalize!
@@ -38,6 +41,7 @@ module EventEngine
     teardown do
       restore_event_engine_helpers(@helpers_snapshot)
       EventEngine.reset_handlers!
+      EventEngine.reset_subjects!
     end
 
     test "the helper dispatches a built event to a registered handler" do
@@ -56,6 +60,15 @@ module EventEngine
       EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
 
       assert_equal :broker, received.first.process_type
+    end
+
+    test "the dispatched event carries the declared subject" do
+      received = []
+      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+
+      EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
+
+      assert_equal :feeding, received.first.subject
     end
   end
 end
