@@ -63,5 +63,12 @@ module EventEngine
     def registered?(name)
       @subjects.key?(name)
     end
+
+    # All declared subject names, in declaration order.
+    #
+    # @return [Array<Symbol>]
+    def names
+      @subjects.keys
+    end
   end
 end
