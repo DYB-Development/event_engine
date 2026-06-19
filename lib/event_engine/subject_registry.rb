@@ -1,5 +1,7 @@
 module EventEngine
   class SubjectRegistry
+    class UnknownSubjectError < StandardError; end
+
     class Subject
       attr_reader :name, :metadata
 
