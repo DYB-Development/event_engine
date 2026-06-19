@@ -247,12 +247,13 @@ place:
 ### Drift checking in CI
 
 ```bash
-bin/rails event_engine:schema_check   # or: event_engine:schema
+bin/rails event_engine:schema:verify
 ```
 
 This fails if your definitions have drifted from the committed `db/event_schema.rb`
-(i.e. someone changed a definition but forgot to dump). Add it to CI to keep the
-file honest.
+(i.e. someone changed a definition but forgot to dump), printing a readable diff of
+what changed. Add it to CI to keep the file honest. The older `event_engine:schema`
+and `event_engine:schema_check` tasks perform the same check without the diff.
 
 ---
 
@@ -425,8 +426,9 @@ end
 | Task | Purpose |
 |---|---|
 | `event_engine:schema:dump` | Compile definitions → `db/event_schema.rb` (commit it) |
-| `event_engine:schema` | Fail if definitions have drifted from the file |
-| `event_engine:schema_check` | Same drift check, alternate name (use in CI) |
+| `event_engine:schema:verify` | Fail with a readable diff if definitions have drifted (use in CI) |
+| `event_engine:schema` | Same drift check, no diff |
+| `event_engine:schema_check` | Same drift check, no diff (alternate name) |
 
 (`event_engine-delivery` adds `dead_letters:*` and `outbox:cleanup` tasks.)
 
