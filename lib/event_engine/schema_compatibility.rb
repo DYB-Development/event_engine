@@ -6,7 +6,7 @@ module EventEngine
     end
 
     def breaking_changes
-      removed_required_fields
+      removed_required_fields + newly_required_fields
     end
 
     private
@@ -17,12 +17,22 @@ module EventEngine
       end
     end
 
+    def newly_required_fields
+      (optional_names(@old) & required_names(@new)).map do |name|
+        "payload field became required: #{name}"
+      end
+    end
+
     def field_names(schema)
       schema.payload_fields.map { |field| field[:name] }
     end
 
     def required_names(schema)
       schema.payload_fields.select { |field| field[:required] }.map { |field| field[:name] }
+    end
+
+    def optional_names(schema)
+      schema.payload_fields.reject { |field| field[:required] }.map { |field| field[:name] }
     end
   end
 end
