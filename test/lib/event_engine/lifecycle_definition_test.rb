@@ -90,6 +90,26 @@ module EventEngine
       assert_equal hand_written.schema.to_ruby, family.generated_events.first.schema.to_ruby
     end
 
+    test "an on-verb block layers a payload field onto that verb" do
+      definition = Class.new(EventEngine::LifecycleDefinition) do
+        subject :export_csv
+        event_type :product
+        input :export
+        input :error
+        required_payload :format, from: :export, attr: :format
+        lifecycle :started, :failed
+
+        on :failed do
+          required_payload :error_class, from: :error, attr: :class
+        end
+      end
+
+      failed = definition.generated_events.last
+      field_names = failed.schema.payload_fields.map { |field| field[:name] }
+
+      assert_equal [:format, :error_class], field_names
+    end
+
     test "generated events are discoverable as EventDefinition descendants" do
       definition = Class.new(EventEngine::LifecycleDefinition) do
         subject :export_csv
