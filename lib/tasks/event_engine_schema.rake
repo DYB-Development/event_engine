@@ -66,5 +66,17 @@ namespace :event_engine do
         definitions: descendants
       )
     end
+
+    desc "Fail if new definitions break compatibility with the committed schema"
+    task compatibility: :environment do
+      EventEngine::DefinitionLoader.ensure_loaded!
+
+      violations = EventEngine::SchemaCompatibility.violations(
+        old_registry: EventEngine.file_schema_registry,
+        new_registry: EventEngine.compiled_schema_registry
+      )
+
+      raise "Breaking schema changes:\n#{violations.join("\n")}" if violations.any?
+    end
   end
 end
