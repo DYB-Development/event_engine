@@ -11,6 +11,8 @@ module EventEngine
     #   @return [Logger] defaults to +Rails.logger+
     attr_accessor :logger
 
+    attr_accessor :metadata_defaults
+
     def initialize
       @logger = defined?(Rails) ? Rails.logger : Logger.new($stdout)
     end

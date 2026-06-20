@@ -68,6 +68,23 @@ module EventEngine
       @subject_registry = nil
     end
 
+    def enriched_metadata(call_site_metadata)
+      defaults = evaluated_metadata_defaults
+      return call_site_metadata if defaults.nil?
+
+      defaults.merge(call_site_metadata || {})
+    end
+
+    def evaluated_metadata_defaults
+      callable = configuration.metadata_defaults
+      return nil unless callable
+
+      callable.call
+    rescue => error
+      configuration.logger&.error("EventEngine metadata_defaults raised: #{error.message}")
+      nil
+    end
+
     def register_handler(handler, levels:)
       handler_registry.register(handler, levels: levels)
     end
@@ -134,7 +151,7 @@ module EventEngine
           schema = registry.schema(event_name, version: event_version)
           attrs = EventBuilder.build(schema: schema, data: inputs)
           attrs[:occurred_at] = occurred_at || Time.current
-          attrs[:metadata] = metadata
+          attrs[:metadata] = EventEngine.enriched_metadata(metadata)
           attrs[:idempotency_key] = idempotency_key || SecureRandom.uuid
           attrs[:aggregate_type] = aggregate_type
           attrs[:aggregate_id] = aggregate_id
