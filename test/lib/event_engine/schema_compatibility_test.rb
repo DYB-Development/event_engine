@@ -49,4 +49,24 @@ class SchemaCompatibilityTest < ActiveSupport::TestCase
 
     assert_empty compatibility.breaking_changes
   end
+
+  def registry_for(schema)
+    event_schema = EventEngine::EventSchema.new
+    event_schema.register(schema)
+    event_schema.finalize!
+
+    registry = EventEngine::SchemaRegistry.new
+    registry.reset!
+    registry.load_from_schema!(event_schema)
+    registry
+  end
+
+  test "violations reports breaking changes per event across registries" do
+    old = registry_for(schema([{ name: :weight, required: true, from: :cow, attr: :weight }]))
+    new = registry_for(schema([]))
+
+    violations = EventEngine::SchemaCompatibility.violations(old_registry: old, new_registry: new)
+
+    assert_includes violations, "cow_fed: required payload field removed: weight"
+  end
 end

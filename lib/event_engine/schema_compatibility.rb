@@ -1,5 +1,17 @@
 module EventEngine
   class SchemaCompatibility
+    def self.violations(old_registry:, new_registry:)
+      new_registry.events.flat_map do |event|
+        previous = old_registry.latest_for(event)
+        next [] unless previous
+
+        current = new_registry.latest_for(event)
+        new(old: previous, new: current).breaking_changes.map do |change|
+          "#{event}: #{change}"
+        end
+      end
+    end
+
     def initialize(old:, new:)
       @old = old
       @new = new
