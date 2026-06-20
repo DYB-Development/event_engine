@@ -42,4 +42,10 @@ class SchemaCatalogTest < ActiveSupport::TestCase
 
     assert_includes catalog.to_markdown, "## cow_fed (v1)"
   end
+
+  test "includes the event type" do
+    catalog = catalog_for(schema(event_name: :cow_fed))
+
+    assert_includes catalog.to_markdown, "- Type: domain"
+  end
 end
