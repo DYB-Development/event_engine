@@ -57,4 +57,13 @@ class SchemaCatalogTest < ActiveSupport::TestCase
 
     assert_includes catalog.to_markdown, "- Subject: feeding (area: farm, owner: data_team)"
   end
+
+  test "lists payload fields with their requiredness" do
+    catalog = catalog_for(schema(
+      event_name: :cow_fed,
+      payload_fields: [{ name: :weight, required: true, from: :cow, attr: :weight }]
+    ))
+
+    assert_includes catalog.to_markdown, "- weight (required)"
+  end
 end

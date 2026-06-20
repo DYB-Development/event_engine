@@ -18,11 +18,19 @@ module EventEngine
     end
 
     def section(schema)
-      [
+      ([
         "## #{schema.event_name} (v#{schema.event_version})",
         "- Type: #{schema.event_type}",
         subject_line(schema)
-      ].compact.join("\n")
+      ] + payload_lines(schema)).compact.join("\n")
+    end
+
+    def payload_lines(schema)
+      return [] if schema.payload_fields.empty?
+
+      ["- Payload:"] + schema.payload_fields.map do |field|
+        "  - #{field[:name]} (#{field[:required] ? "required" : "optional"})"
+      end
     end
 
     def subject_line(schema)
