@@ -147,6 +147,17 @@ module EventEngine
       assert_equal [:export, :error], failed.schema.required_inputs
     end
 
+    test "a generated event has a descriptive inspect naming its event" do
+      definition = Class.new(EventEngine::LifecycleDefinition) do
+        subject :export_csv
+        event_type :product
+        lifecycle :completed
+      end
+
+      assert_equal "EventEngine::LifecycleDefinition(export_csv_completed)",
+                   definition.generated_events.first.inspect
+    end
+
     test "materialize_all! returns the generated events of every lifecycle definition" do
       Class.new(EventEngine::LifecycleDefinition) do
         subject :materialize_demo

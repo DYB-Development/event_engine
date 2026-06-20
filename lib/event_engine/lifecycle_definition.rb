@@ -54,10 +54,14 @@ module EventEngine
 
       def build_event(verb)
         template = self
+        name = :"#{template.declared_subject}_#{verb}"
 
         Class.new(EventDefinition) do
-          event_name :"#{template.declared_subject}_#{verb}"
+          event_name name
           event_type template.declared_event_type
+
+          define_singleton_method(:inspect) { "EventEngine::LifecycleDefinition(#{name})" }
+          define_singleton_method(:to_s) { inspect }
           subject template.declared_subject
           process_type template.declared_process_type if template.declared_process_type
 
