@@ -54,5 +54,13 @@ module EventEngine
 
       assert_equal 99, event.metadata[:actor_id]
     end
+
+    test "a raising metadata_defaults does not break emission" do
+      EventEngine.configuration.metadata_defaults = -> { raise "boom" }
+
+      event = EventEngine.cow_fed(cow: OpenStruct.new(weight: 500), metadata: { actor_id: 7 })
+
+      assert_equal 7, event.metadata[:actor_id]
+    end
   end
 end
