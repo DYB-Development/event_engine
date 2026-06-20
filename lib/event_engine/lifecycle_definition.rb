@@ -22,6 +22,14 @@ module EventEngine
         @verbs = verbs
       end
 
+      def on(verb, &block)
+        verb_overrides[verb] = block
+      end
+
+      def verb_overrides
+        @verb_overrides ||= {}
+      end
+
       def generated_events
         @generated_events ||= Array(@verbs).map { |verb| build_event(verb) }
       end
@@ -60,6 +68,9 @@ module EventEngine
               optional_payload field[:name], from: field[:from], attr: field[:attr]
             end
           end
+
+          override = template.verb_overrides[verb]
+          class_eval(&override) if override
         end
       end
     end
