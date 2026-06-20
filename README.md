@@ -34,6 +34,7 @@ You can run the core gem **by itself** with your own handlers — see
   - [The DSL reference](#the-dsl-reference)
   - [How payload fields are extracted](#how-payload-fields-are-extracted)
   - [There is no `type:` casting](#there-is-no-type-casting)
+  - [Lifecycle event families](#lifecycle-event-families)
 - [Generating the schema](#generating-the-schema)
   - [How versioning works](#how-versioning-works)
   - [Drift checking in CI](#drift-checking-in-ci)
@@ -186,6 +187,48 @@ The complete payload DSL is `required_payload` / `optional_payload` with `from:`
 Whatever value `attr:` returns is stored as-is. If you need a value coerced to a
 specific type, do it on the source object's method (e.g. have `cow.weight` return a
 `Float`) or expose a purpose-built reader and point `attr:` at it.
+
+### Lifecycle event families
+
+Related events that describe one capability — `export_csv_started`,
+`export_csv_completed`, `export_csv_failed` — share inputs and payload fields. Writing
+them as three independent `EventDefinition`s lets their names and shared fields drift.
+Subclass `EventEngine::LifecycleDefinition` to stamp the whole family from one template:
+
+```ruby
+# app/event_definitions/export_csv_events.rb
+class ExportCsvEvents < EventEngine::LifecycleDefinition
+  subject :export_csv                      # validated against the SubjectRegistry
+  event_type :product
+
+  input :export
+  required_payload :format, from: :export, attr: :format
+
+  lifecycle :started, :completed, :failed  # → export_csv_started / _completed / _failed
+
+  on :failed do
+    input :error
+    required_payload :error_class, from: :error, attr: :class
+  end
+end
+```
+
+This generates three real `EventDefinition`s named `subject_verb` (flat snake_case, so
+each yields a working `EventEngine.export_csv_completed(...)` helper). Shared declarations
+apply to every verb; an `on :verb` block layers additional inputs/payloads onto that verb
+only. The generated events behave exactly like hand-written ones everywhere — schema dump,
+registry, helpers, metadata enricher, catalog, and compatibility checks all apply unchanged.
+
+| Macro | Signature | What it does |
+|---|---|---|
+| `subject` | `subject(:symbol)` | The family's subject, carried onto every generated event. Must be registered. |
+| `event_type` | `event_type(:symbol)` | Shared across every verb. |
+| `process_type` | `process_type(:symbol)` | Shared across every verb. Optional. |
+| `lifecycle` | `lifecycle(*verbs)` | Generates one event per verb, named `:"#{subject}_#{verb}"`. |
+| `on` | `on(:verb) { … }` | Layers verb-specific `input` / `required_payload` / `optional_payload` onto that verb only. Add-only. |
+
+Shared `input` / `optional_input` / `required_payload` / `optional_payload` are declared
+exactly as on a plain `EventDefinition` and apply to every verb.
 
 ---
 
