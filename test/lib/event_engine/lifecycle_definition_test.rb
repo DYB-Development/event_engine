@@ -110,6 +110,26 @@ module EventEngine
       assert_equal [:format, :error_class], field_names
     end
 
+    test "an on-verb block leaves other verbs untouched" do
+      definition = Class.new(EventEngine::LifecycleDefinition) do
+        subject :export_csv
+        event_type :product
+        input :export
+        input :error
+        required_payload :format, from: :export, attr: :format
+        lifecycle :started, :failed
+
+        on :failed do
+          required_payload :error_class, from: :error, attr: :class
+        end
+      end
+
+      started = definition.generated_events.first
+      field_names = started.schema.payload_fields.map { |field| field[:name] }
+
+      assert_equal [:format], field_names
+    end
+
     test "generated events are discoverable as EventDefinition descendants" do
       definition = Class.new(EventEngine::LifecycleDefinition) do
         subject :export_csv
