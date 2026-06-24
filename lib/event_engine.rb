@@ -161,6 +161,7 @@ module EventEngine
           attrs[:aggregate_version] = aggregate_version
           attrs[:process_type] = schema.process_type
           attrs[:subject] = schema.subject
+          attrs[:domain] = schema.domain
 
           EventEngine.dispatch(Event.new(**attrs))
         end

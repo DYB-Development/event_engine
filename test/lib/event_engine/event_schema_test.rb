@@ -48,29 +48,32 @@ class EventSchemaTest < ActiveSupport::TestCase
     assert_equal [1, 2], versions
   end
 
-  test "register overwrites when registering the same event_name and version" do
-    v1a = EventEngine::EventDefinition::Schema.new(
-      event_name: :cow_fed,
-      event_version: 1,
+  test "register raises a named error on a duplicate event_name" do
+    a = EventEngine::EventDefinition::Schema.new(
+      event_name: :deal_won,
       event_type: :domain,
-      required_inputs: [:cow],
+      domain: :sales,
+      required_inputs: [],
       optional_inputs: [],
-      payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
+      payload_fields: []
     )
 
-    v1b = EventEngine::EventDefinition::Schema.new(
-      event_name: :cow_fed,
-      event_version: 1,
+    b = EventEngine::EventDefinition::Schema.new(
+      event_name: :deal_won,
       event_type: :domain,
-      required_inputs: [:cow],
+      domain: :marketing,
+      required_inputs: [],
       optional_inputs: [],
-      payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
+      payload_fields: []
     )
 
     event_schema = EventEngine::EventSchema.new
-    event_schema.register(v1a)
-    event_schema.register(v1b)
+    event_schema.register(a)
 
-    assert_equal v1b, event_schema.schemas_by_event[:cow_fed][1]
+    error = assert_raises(EventEngine::EventSchema::DuplicateEventNameError) do
+      event_schema.register(b)
+    end
+
+    assert_match(/deal_won.*sales.*marketing/m, error.message)
   end
 end

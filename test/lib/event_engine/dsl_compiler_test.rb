@@ -27,4 +27,22 @@ class DslCompilerTest < ActiveSupport::TestCase
     registry.finalize!
     assert registry.event_schema.frozen?
   end
+
+  test "raises when two definitions declare the same event_name" do
+    sales_deal = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+    end
+
+    marketing_deal = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :marketing
+    end
+
+    assert_raises(EventEngine::EventSchema::DuplicateEventNameError) do
+      EventEngine::DslCompiler.compile([sales_deal, marketing_deal])
+    end
+  end
 end

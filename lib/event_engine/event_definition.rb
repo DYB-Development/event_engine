@@ -67,6 +67,10 @@ module EventEngine
       def subject(value)
         @subject = value
       end
+
+      def domain(value)
+        @domain = value
+      end
     end
   end
 end

@@ -8,6 +8,7 @@ module EventEngine
     :event_version,
     :process_type,
     :subject,
+    :domain,
     :payload,
     :metadata,
     :occurred_at,

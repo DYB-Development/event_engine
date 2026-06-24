@@ -8,6 +8,7 @@ class SchemaToRubyTest < ActiveSupport::TestCase
       event_type: "domain",
       process_type: :durable,
       subject: :feeding,
+      domain: :sales,
       required_inputs: [:cow],
       optional_inputs: [:barn],
       payload_fields: [
@@ -24,6 +25,7 @@ class SchemaToRubyTest < ActiveSupport::TestCase
         event_type: "domain",
         process_type: :durable,
         subject: :feeding,
+        domain: :sales,
         required_inputs: [:cow],
         optional_inputs: [:barn],
         payload_fields: [{name: :cow_id, from: :cow, attr: :id}]

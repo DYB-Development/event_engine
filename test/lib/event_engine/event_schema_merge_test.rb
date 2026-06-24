@@ -36,6 +36,27 @@ class EventSchemaMergeTest < ActiveSupport::TestCase
     assert_equal [1], merged.versions_for(:cow_fed)
   end
 
+  test "does not create new version when only the domain changes" do
+    file = EventEngine::EventSchema.new
+    file.register(EventEngine::EventDefinition::Schema.new(
+      event_name: :cow_fed, event_version: 1, event_type: :domain, domain: :sales,
+      required_inputs: [:cow], optional_inputs: [],
+      payload_fields: [{ name: :w, from: :cow, attr: :weight }]
+    ))
+    file.finalize!
+
+    compiled = EventEngine::SchemaRegistry.new
+    compiled.register(EventEngine::EventDefinition::Schema.new(
+      event_name: :cow_fed, event_version: nil, event_type: :domain, domain: :marketing,
+      required_inputs: [:cow], optional_inputs: [],
+      payload_fields: [{ name: :w, from: :cow, attr: :weight }]
+    ))
+
+    merged = EventEngine::EventSchemaMerger.merge(compiled, EventEngine::SchemaRegistry.new(file))
+
+    assert_equal [1], merged.versions_for(:cow_fed)
+  end
+
   test "creates new version when compiled differs from latest" do
     file = EventEngine::EventSchema.new
     file.register(schema(event_name: :cow_fed, version: 1, payload: [{ name: :w, from: :cow, attr: :weight }]))

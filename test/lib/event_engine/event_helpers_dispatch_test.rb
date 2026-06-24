@@ -10,6 +10,7 @@ module EventEngine
       event_type :domain
       process_type :broker
       subject :feeding
+      domain :sales
 
       input :cow
       required_payload :weight, from: :cow, attr: :weight
@@ -69,6 +70,15 @@ module EventEngine
       EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
 
       assert_equal :feeding, received.first.subject
+    end
+
+    test "the dispatched event carries the declared domain" do
+      received = []
+      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+
+      EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
+
+      assert_equal :sales, received.first.domain
     end
   end
 end

@@ -3,6 +3,8 @@ module EventEngine
   # This is the data structure loaded from the compiled +db/event_schema.rb+ file
   # and used by {SchemaRegistry} at runtime.
   class EventSchema
+    class DuplicateEventNameError < StandardError; end
+
     # Creates an EventSchema using a block DSL (used by the schema file).
     #
     # @yieldparam schema [EventSchema]
@@ -28,7 +30,17 @@ module EventEngine
       version = schema.event_version
 
       @schemas_by_event[event_name] ||= {}
+      guard_duplicate_event_name!(@schemas_by_event[event_name][version], schema)
       @schemas_by_event[event_name][version] = schema
+    end
+
+    def guard_duplicate_event_name!(existing, incoming)
+      return unless existing
+
+      raise DuplicateEventNameError,
+            "duplicate event_name #{incoming.event_name.inspect}: " \
+            "already registered with domain #{existing.domain.inspect}, " \
+            "cannot register again with domain #{incoming.domain.inspect}"
     end
 
     # Returns all registered event names.
