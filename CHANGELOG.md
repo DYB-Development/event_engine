@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-25
+
 ### Added
 
 - **`:manual` delivery adapter** — Delivery becomes a no-op; the outbox is drained
@@ -31,11 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cloud configuration options: `cloud_api_key`, `cloud_endpoint`, `cloud_batch_size`, `cloud_flush_interval`, `cloud_environment`, `cloud_app_name`
 - Boot logging — Reporter logs start/stop messages for operator visibility
 - `NullTransport` as default transport (logs warnings for discarded events instead of nil errors)
-
-## [0.1.0] - 2025-12-16
-
-### Added
-
 - Event definition DSL (`event_name`, `event_type`, `input`, `required_payload`, `optional_payload`)
 - Schema compilation via `DslCompiler` and `EventSchemaDumper`
 - Schema versioning with SHA256 fingerprint-based version detection
@@ -52,5 +49,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rails engine generator for installation
 - Rake tasks: `event_engine:schema`, `event_engine:schema:dump`
 
-[Unreleased]: https://github.com/tylercschneider/event_engine/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/tylercschneider/event_engine/releases/tag/v0.1.0
+[Unreleased]: https://github.com/DYB-Development/event_engine/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/DYB-Development/event_engine/releases/tag/v0.1.0
