@@ -27,16 +27,16 @@ require "event_engine/the_local"
 # EventEngine is the schema-first core of the event pipeline.
 #
 # Events are defined via a Ruby DSL and compiled into a canonical schema file.
-# At boot, a helper method is installed on this module for each registered event
-# (e.g. +EventEngine.cow_fed(cow: cow)+); the helper validates inputs, builds an
-# +Event+, and dispatches it to registered handlers by level. Companion gems
-# (e.g. event_engine-delivery) register handlers to process the events.
+# The dump also generates a committed file of real helper methods, one per
+# registered event (e.g. +EventEngine.cow_fed(cow: cow)+), each a typed
+# delegator to {emit}, which validates inputs, builds an +Event+, and dispatches
+# it to registered handlers. Companion gems (e.g. event_engine-delivery) register
+# handlers to process the events.
 #
 # @example Define, build, and dispatch an event
 #   EventEngine.register_handler(MyHandler, levels: :all)
 #   EventEngine.cow_fed(cow: cow, occurred_at: Time.current)
 module EventEngine
-  mattr_accessor :_installed_event_helpers, default: Set.new
   mattr_accessor :active_registry
 
   ENVELOPE_KEYS = %i[
@@ -140,29 +140,6 @@ module EventEngine
       require helpers_path.to_s if File.exist?(helpers_path)
 
       event_schema
-    end
-
-    # Installs singleton helper methods on the EventEngine module for each
-    # event in the registry. Previous helpers are removed first.
-    #
-    # @param registry [SchemaRegistry] the loaded registry
-    def install_helpers(registry:)
-      self.active_registry = registry
-
-      _installed_event_helpers.each do |method_name|
-        singleton_class.remove_method(method_name) if singleton_class.method_defined?(method_name)
-      end
-      _installed_event_helpers.clear
-
-      registry.events.each do |event_name|
-        define_singleton_method(event_name) do |**args|
-          envelope = args.slice(*ENVELOPE_KEYS)
-          inputs = args.except(*ENVELOPE_KEYS)
-          EventEngine.emit(event_name, inputs: inputs, **envelope)
-        end
-
-        _installed_event_helpers << event_name
-      end
     end
 
     # Compiles event definitions from source into a registry.
