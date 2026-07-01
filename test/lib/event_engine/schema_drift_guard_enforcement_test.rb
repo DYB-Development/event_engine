@@ -60,6 +60,30 @@ class SchemaDriftGuardEnforcementTest < ActiveSupport::TestCase
     file.unlink
   end
 
+  test "raises when the JSON schema artifact is out of sync" do
+    schema_file = Tempfile.new("event_schema.rb")
+    json_file = Tempfile.new(["event_schema", ".json"])
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed],
+      path: schema_file.path,
+      json_path: json_file.path
+    )
+
+    File.write(json_file.path, "[]\n")
+
+    assert_raises(EventEngine::SchemaDriftGuard::DriftError) do
+      EventEngine::SchemaDriftGuard.check!(
+        schema_path: schema_file.path,
+        definitions: [CowFed],
+        json_path: json_file.path
+      )
+    end
+  ensure
+    schema_file.unlink
+    json_file.unlink
+  end
+
   test "raises when the generated helpers file is out of sync" do
     schema_file = Tempfile.new("event_schema.rb")
     helpers_file = Tempfile.new("event_engine_helpers.rb")
