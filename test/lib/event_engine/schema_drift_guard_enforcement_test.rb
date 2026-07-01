@@ -84,6 +84,31 @@ class SchemaDriftGuardEnforcementTest < ActiveSupport::TestCase
     json_file.unlink
   end
 
+  test "raises a does-not-exist error when the JSON schema artifact is missing" do
+    schema_file = Tempfile.new("event_schema.rb")
+    json_file = Tempfile.new(["event_schema", ".json"])
+    json_path = json_file.path
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed],
+      path: schema_file.path
+    )
+
+    json_file.unlink
+
+    error = assert_raises(EventEngine::SchemaDriftGuard::DriftError) do
+      EventEngine::SchemaDriftGuard.check!(
+        schema_path: schema_file.path,
+        definitions: [CowFed],
+        json_path: json_path
+      )
+    end
+
+    assert_match(/does not exist/, error.message)
+  ensure
+    schema_file.unlink
+  end
+
   test "raises when the generated helpers file is out of sync" do
     schema_file = Tempfile.new("event_schema.rb")
     helpers_file = Tempfile.new("event_engine_helpers.rb")

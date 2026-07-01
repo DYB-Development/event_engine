@@ -24,6 +24,8 @@ module EventEngine
     end
 
     def self.check_json_drift!(json_path, regenerated)
+      raise DriftError, "JSON schema file does not exist: #{json_path}" unless File.exist?(json_path)
+
       check_drift!(json_path, regenerated, "json schema")
     end
 
