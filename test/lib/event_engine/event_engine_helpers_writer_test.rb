@@ -37,5 +37,17 @@ module EventEngine
 
       assert_includes source, "cow:,"
     end
+
+    test "an optional input becomes a keyword defaulting to nil" do
+      source = generate(schema_with(required_inputs: [:cow], optional_inputs: [:note]))
+
+      assert_includes source, "note: nil"
+    end
+
+    test "the envelope keys are delegated to emit" do
+      source = generate(schema_with(required_inputs: [:cow]))
+
+      assert_includes source, "metadata: metadata"
+    end
   end
 end
