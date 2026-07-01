@@ -46,4 +46,20 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
   ensure
     file.unlink
   end
+
+  test "dump writes generated helpers when a helpers path is given" do
+    schema_file = Tempfile.new("event_schema.rb")
+    helpers_file = Tempfile.new("event_engine_helpers.rb")
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed],
+      path: schema_file.path,
+      helpers_path: helpers_file.path
+    )
+
+    assert_includes File.read(helpers_file.path), "def cow_fed"
+  ensure
+    schema_file.unlink
+    helpers_file.unlink
+  end
 end
