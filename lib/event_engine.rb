@@ -130,13 +130,14 @@ module EventEngine
     # @param schema_path [String, Pathname] path to the compiled schema file
     # @param registry [SchemaRegistry] the registry to populate
     # @return [EventSchema] the loaded schema
-    def boot_from_schema!(schema_path:, registry:)
+    def boot_from_schema!(schema_path:, registry:, helpers_path: EventSchemaDumper.default_helpers_path(schema_path))
       event_schema = EventSchemaLoader.load(schema_path)
 
       registry.reset!
       registry.load_from_schema!(event_schema)
+      self.active_registry = registry
 
-      install_helpers(registry: registry)
+      require helpers_path.to_s if File.exist?(helpers_path)
 
       event_schema
     end

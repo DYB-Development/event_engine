@@ -1,39 +1,31 @@
 require "test_helper"
-require "tempfile"
+require "tmpdir"
 
 class EngineBootTest < ActiveSupport::TestCase
   include EventEngineTestHelpers
 
-  test "engine loads schema file into registry and installs helpers" do
+  class CowFed < EventEngine::EventDefinition
+    event_name :cow_fed
+    event_type :domain
+    input :cow
+    required_payload :weight, from: :cow, attr: :weight
+  end
+
+  test "engine boot loads the schema and requires the generated helpers" do
     helpers_snapshot = snapshot_event_engine_helpers
-    file = Tempfile.new(["event_schema", ".rb"])
+    dir = Dir.mktmpdir
+    schema_path = File.join(dir, "event_schema.rb")
 
-    file.write(<<~RUBY)
-      EventEngine::EventSchema.define do |schema|
-        schema.register(
-          EventEngine::EventDefinition::Schema.new(
-            event_name: :cow_fed,
-            event_version: 1,
-            event_type: :domain,
-            required_inputs: [:cow],
-            optional_inputs: [],
-            payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
-          )
-        )
-      end
-    RUBY
-    file.close
+    EventEngine::EventSchemaDumper.dump!(definitions: [CowFed], path: schema_path)
 
-    assert_nothing_raised do
-      EventEngine::Engine.send(
-        :load_schema_and_install_helpers,
-        schema_path: file.path
-      )
-    end
+    EventEngine::Engine.send(
+      :load_schema_and_install_helpers,
+      schema_path: schema_path
+    )
 
     assert EventEngine.respond_to?(:cow_fed)
   ensure
     restore_event_engine_helpers(helpers_snapshot)
-    file.unlink if file
+    FileUtils.remove_entry(dir) if dir
   end
 end
