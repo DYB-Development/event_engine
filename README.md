@@ -269,6 +269,43 @@ EventEngine::EventSchema.define do |schema|
 end
 ```
 
+### Neutral JSON artifact
+
+Alongside `db/event_schema.rb`, the dump writes `db/event_schema.json` — the same
+compiled schema as plain, versioned data that BI/data consumers can read **without
+running Ruby or evaluating the executable schema file**. It is purely additive: the
+Ruby file and the runtime boot path are unchanged. **Commit it** next to the Ruby
+file.
+
+It is a JSON array with one object per event **and version**, sorted by
+`event_name` then `event_version`, and re-dumping an unchanged schema produces
+byte-identical output:
+
+```json
+[
+  {
+    "event_name": "cow_fed",
+    "event_version": 1,
+    "event_type": "domain",
+    "process_type": "durable",
+    "subject": "feeding",
+    "domain": "sales",
+    "required_inputs": ["cow"],
+    "optional_inputs": ["farmer"],
+    "payload_fields": [
+      { "name": "weight", "from": "cow", "attr": "weight", "required": true }
+    ],
+    "fingerprint": "…"
+  }
+]
+```
+
+Each object carries the event's identity (`event_name`, `event_version`,
+`event_type`, `process_type`, `subject`, `domain`), its inputs
+(`required_inputs`, `optional_inputs`), its `payload_fields` (each with `name`,
+`from`, `attr`, `required`), and the `fingerprint` used for version bumping. This
+is documented plain JSON — not a formal JSON Schema.
+
 ### How versioning works
 
 The dumper is **append-only and additive** — it never edits an existing version in
@@ -468,7 +505,7 @@ end
 
 | Task | Purpose |
 |---|---|
-| `event_engine:schema:dump` | Compile definitions → `db/event_schema.rb` (commit it) |
+| `event_engine:schema:dump` | Compile definitions → `db/event_schema.rb` + `db/event_schema.json` (commit them) |
 | `event_engine:schema:verify` | Fail with a readable diff if definitions have drifted (use in CI) |
 | `event_engine:schema` | Same drift check, no diff |
 | `event_engine:schema_check` | Same drift check, no diff (alternate name) |
