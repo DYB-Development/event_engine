@@ -16,7 +16,8 @@ namespace :event_engine do
 
     EventEngine::SchemaDriftGuard.check!(
       schema_path: Rails.root.join("db/event_schema.rb"),
-      definitions: descendants
+      definitions: descendants,
+      helpers_path: Rails.root.join("db/event_engine_helpers.rb")
     )
   end
 
@@ -37,10 +38,12 @@ namespace :event_engine do
       end
       
       path = Rails.root.join("db/event_schema.rb")
+      helpers_path = Rails.root.join("db/event_engine_helpers.rb")
 
       EventEngine::EventSchemaDumper.dump!(
         definitions: descendants,
-        path: path
+        path: path,
+        helpers_path: helpers_path
       )
 
       puts "Dumping EventEngine schema to #{path}"
@@ -63,7 +66,8 @@ namespace :event_engine do
 
       EventEngine::SchemaDriftGuard.check!(
         schema_path: Rails.root.join("db/event_schema.rb"),
-        definitions: descendants
+        definitions: descendants,
+        helpers_path: Rails.root.join("db/event_engine_helpers.rb")
       )
     end
 
