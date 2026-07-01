@@ -13,6 +13,7 @@ class EngineBootTest < ActiveSupport::TestCase
 
   test "engine boot loads the schema and requires the generated helpers" do
     helpers_snapshot = snapshot_event_engine_helpers
+    previous_registry = EventEngine.active_registry
     dir = Dir.mktmpdir
     schema_path = File.join(dir, "event_schema.rb")
 
@@ -26,6 +27,7 @@ class EngineBootTest < ActiveSupport::TestCase
     assert EventEngine.respond_to?(:cow_fed)
   ensure
     restore_event_engine_helpers(helpers_snapshot)
+    EventEngine.active_registry = previous_registry
     FileUtils.remove_entry(dir) if dir
   end
 end
