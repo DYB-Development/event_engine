@@ -47,6 +47,22 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
     file.unlink
   end
 
+  test "dump writes the neutral JSON artifact when a json path is given" do
+    schema_file = Tempfile.new("event_schema.rb")
+    json_file = Tempfile.new(["event_schema", ".json"])
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed],
+      path: schema_file.path,
+      json_path: json_file.path
+    )
+
+    assert_includes File.read(json_file.path), %("event_name": "cow_fed")
+  ensure
+    schema_file.unlink
+    json_file.unlink
+  end
+
   test "dump writes generated helpers when a helpers path is given" do
     schema_file = Tempfile.new("event_schema.rb")
     helpers_file = Tempfile.new("event_engine_helpers.rb")
