@@ -17,7 +17,8 @@ namespace :event_engine do
     EventEngine::SchemaDriftGuard.check!(
       schema_path: Rails.root.join("db/event_schema.rb"),
       definitions: descendants,
-      helpers_path: Rails.root.join("db/event_engine_helpers.rb")
+      helpers_path: Rails.root.join("db/event_engine_helpers.rb"),
+      json_path: Rails.root.join("db/event_schema.json")
     )
   end
 
@@ -69,7 +70,8 @@ namespace :event_engine do
       EventEngine::SchemaDriftGuard.check!(
         schema_path: Rails.root.join("db/event_schema.rb"),
         definitions: descendants,
-        helpers_path: Rails.root.join("db/event_engine_helpers.rb")
+        helpers_path: Rails.root.join("db/event_engine_helpers.rb"),
+        json_path: Rails.root.join("db/event_schema.json")
       )
     end
 
