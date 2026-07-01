@@ -36,6 +36,7 @@ require "event_engine/the_local"
 #   EventEngine.cow_fed(cow: cow, occurred_at: Time.current)
 module EventEngine
   mattr_accessor :_installed_event_helpers, default: Set.new
+  mattr_accessor :active_registry
   class << self
     # Returns the current configuration instance.
     #
@@ -94,6 +95,22 @@ module EventEngine
 
     def dispatch(event)
       handler_registry.dispatch(event)
+    end
+
+    def emit(event_name, inputs:, event_version: nil, occurred_at: nil, metadata: nil,
+             idempotency_key: nil, aggregate_type: nil, aggregate_id: nil, aggregate_version: nil)
+      schema = active_registry.schema(event_name, version: event_version)
+      attrs = EventBuilder.build(schema: schema, data: inputs)
+      attrs[:occurred_at] = occurred_at || Time.current
+      attrs[:metadata] = enriched_metadata(metadata)
+      attrs[:idempotency_key] = idempotency_key || SecureRandom.uuid
+      attrs[:aggregate_type] = aggregate_type
+      attrs[:aggregate_id] = aggregate_id
+      attrs[:aggregate_version] = aggregate_version
+      attrs[:process_type] = schema.process_type
+      attrs[:subject] = schema.subject
+      attrs[:domain] = schema.domain
+      dispatch(Event.new(**attrs))
     end
 
     def reset_handlers!
