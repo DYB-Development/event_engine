@@ -22,39 +22,30 @@ handlers of its own. Durable delivery, an event store, and ready-made subscriber
 classes are separate companion gems (`event_engine-delivery`, `event_engine-store`,
 `event_engine-subscribers`) — this reference covers core only.
 
-### What it offers
+### Interface
 
-**Define events** — subclass `EventEngine::EventDefinition` in `app/event_definitions/`:
+The complete public surface — every entry point with its exact signature, so a
+local answers from here instead of reading source.
+
+**Event-definition DSL** — class methods available inside an
+`EventEngine::EventDefinition` subclass placed in `app/event_definitions/`:
 
 ```ruby
-class CowFed < EventEngine::EventDefinition
-  event_name :cow_fed        # the event's identity (required)
-  event_type :domain         # classification, e.g. :domain (required)
-  process_type :durable      # routing type (optional; set it explicitly)
-
-  input :cow                 # a required input
-  optional_input :farmer     # an optional input
-
-  required_payload :weight,      from: :cow,    attr: :weight
-  optional_payload :farmer_name, from: :farmer, attr: :name
-end
+event_name(:symbol)                        # required — the event's identity; becomes EventEngine.<name>
+event_type(:symbol)                        # required — classification, e.g. :domain
+process_type(:symbol)                      # optional — routing type; set it explicitly
+input(:name)                               # an input the emit helper must receive
+optional_input(:name)                      # an input the emit helper may receive
+required_payload(name, from:, attr: nil)   # payload field; from: names an input, attr: is read on it
+optional_payload(name, from:, attr: nil)   # same, but omitted when the source input is nil
 ```
 
-| DSL method | Purpose |
-|---|---|
-| `event_name(:symbol)` | The event's identity; becomes `EventEngine.<name>`. Required. |
-| `event_type(:symbol)` | Classification, e.g. `:domain`. Required. |
-| `process_type(:symbol)` | Routing type (optional). One of the six values below. |
-| `input(:name)` / `optional_input(:name)` | Inputs the emit helper must / may receive. |
-| `required_payload(name, from:, attr: nil)` | Payload field; `from:` names an input, `attr:` is the method read on it (`nil` passes the input through). |
-| `optional_payload(name, from:, attr: nil)` | Same, but omitted when the source input is nil. |
-
-Duplicate input names raise `ArgumentError`; payload `from:` must reference a
-declared input.
+`from:` must reference a declared input; `attr:` is the method read on that input
+(`nil` passes the input through). Duplicate input names raise `ArgumentError`.
 
 **process_type** — core stamps this symbol onto every emitted event but does not act
-on it. Which handlers receive an event is decided by each handler's `levels:`. The
-values:
+on it. Which handlers receive an event is decided by each handler's `process_types:`.
+The six values:
 
 | value | intent |
 |---|---|
@@ -69,37 +60,26 @@ The companion gems register the handlers that give `:durable`, `:broker`, `:sour
 etc. their behavior; core just routes to whatever is registered. If `process_type`
 is omitted it is `nil` — set it explicitly so routing intent is clear.
 
-**Emit events** — booting installs an `EventEngine.<event_name>` helper per event:
+**Runtime (module-level)** — booting installs one `EventEngine.<event_name>` helper
+per event; the rest are always available:
 
 ```ruby
-EventEngine.cow_fed(
-  cow: cow, farmer: farmer,           # declared inputs, by name
-  occurred_at: Time.current,          # optional, defaults to now
-  metadata: { request_id: "abc" },    # optional
-  idempotency_key: "…",               # optional, defaults to a UUID
-  aggregate_type: "Cow", aggregate_id: cow.id, aggregate_version: 1,
-  event_version: 1                    # optional, defaults to the latest schema version
-)
-```
+EventEngine.<event_name>(**inputs,        # declared inputs, by name
+  event_version: nil,                      # optional, defaults to the latest schema version
+  occurred_at: nil,                        # optional, defaults to Time.current
+  metadata: nil,                           # optional
+  idempotency_key: nil,                    # optional, defaults to a UUID
+  aggregate_type: nil, aggregate_id: nil, aggregate_version: nil) # optional
+#   Emits the event: validates inputs, builds the payload, dispatches. Missing a
+#   required input, or passing an unknown one, raises ArgumentError. payload is symbol-keyed.
 
-Missing a required input, or passing an unknown one, raises `ArgumentError`. The
-event's `payload` is symbol-keyed.
+EventEngine.register_handler(handler, process_types:)  # process_types: [ :inline, … ] or :all
+#   handler is any object responding to call(event). Handlers run synchronously in
+#   registration order; if one raises, the rest don't run.
 
-**Register handlers** — a handler is any object responding to `call(event)`:
-
-```ruby
-EventEngine.register_handler(handler, levels: [:inline, :durable])  # or levels: :all
-EventEngine.dispatch(event)     # fan an event out (emit helpers call this)
-EventEngine.reset_handlers!     # clear all handlers
-```
-
-Handlers run synchronously in registration order; if one raises, the rest don't run.
-Keep handlers idempotent.
-
-**Configure** — `config/initializers/event_engine.rb`, logger only:
-
-```ruby
-EventEngine.configure { |config| config.logger = Rails.logger }
+EventEngine.dispatch(event)     # fan an event out to registered handlers (emit helpers call this)
+EventEngine.reset_handlers!     # clear all registered handlers
+EventEngine.configure { |config| config.logger = Rails.logger }  # config exposes logger only
 ```
 
 **Schema workflow** — definitions compile to a committed `db/event_schema.rb`, which
@@ -112,6 +92,44 @@ bin/rails event_engine:schema_check   # CI: fail if definitions drift from the f
 
 A new event is version 1; changing an event's identity or payload bumps its version.
 Changing only `process_type` does not bump the version.
+
+### Recipe
+
+Define an event, compile it, register a handler, and emit — the complete common task,
+copy-paste and rename:
+
+```ruby
+# app/event_definitions/cow_fed.rb
+class CowFed < EventEngine::EventDefinition
+  event_name :cow_fed        # the event's identity (required)
+  event_type :domain         # classification (required)
+  process_type :durable      # routing type (set explicitly)
+
+  input :cow                 # a required input
+  optional_input :farmer     # an optional input
+
+  required_payload :weight,      from: :cow,    attr: :weight
+  optional_payload :farmer_name, from: :farmer, attr: :name
+end
+```
+
+```bash
+bin/rails event_engine:schema:dump    # compile → db/event_schema.rb, then commit the file
+```
+
+```ruby
+# a handler is any object responding to call(event); keep it idempotent
+class WeighingLog
+  def call(event)
+    Rails.logger.info("cow weighed #{event.payload[:weight]}kg")
+  end
+end
+
+EventEngine.register_handler(WeighingLog.new, process_types: [:durable])
+
+# emit through the generated helper, passing the declared inputs
+EventEngine.cow_fed(cow: cow, farmer: farmer, occurred_at: Time.current)
+```
 
 ### Install
 
@@ -126,7 +144,7 @@ Durable delivery, an event store, and prebuilt subscriber classes are separate g
 (`event_engine-delivery`, `event_engine-store`, `event_engine-subscribers`); add them
 when you need them and follow their own setup.
 
-### EventEngine conventions
+### Conventions
 
 - Define one `EventDefinition` class per event in `app/event_definitions/`; never
   hand-build event hashes.

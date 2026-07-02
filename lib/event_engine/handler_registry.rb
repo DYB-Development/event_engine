@@ -4,14 +4,14 @@ module EventEngine
       @handlers = []
     end
 
-    def register(handler, levels:)
-      @handlers << { handler: handler, levels: levels }
+    def register(handler, process_types:)
+      @handlers << { handler: handler, process_types: process_types }
     end
 
     def dispatch(event)
       @handlers.each do |registration|
-        levels = registration[:levels]
-        registration[:handler].call(event) if levels == :all || levels.include?(event.process_type)
+        process_types = registration[:process_types]
+        registration[:handler].call(event) if process_types == :all || process_types.include?(event.process_type)
       end
       event
     end

@@ -60,7 +60,7 @@ module EventEngine
         SchemaRegistry.new.tap { |registry| registry.load_from_schema!(event_schema) }
 
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       Tempfile.create(["helpers", ".rb"]) do |file|
         EventEngineHelpersWriter.write(file.path, event_schema)

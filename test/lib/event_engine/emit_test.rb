@@ -45,7 +45,7 @@ module EventEngine
 
     test "emit dispatches the built event to a registered handler" do
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 

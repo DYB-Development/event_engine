@@ -35,7 +35,7 @@ require "event_engine/the_local"
 # handlers to process the events.
 #
 # @example Define, build, and dispatch an event
-#   EventEngine.register_handler(MyHandler, levels: :all)
+#   EventEngine.register_handler(MyHandler, process_types: :all)
 #   EventEngine.cow_fed(cow: cow, occurred_at: Time.current)
 module EventEngine
   class << self
@@ -115,8 +115,8 @@ module EventEngine
       nil
     end
 
-    def register_handler(handler, levels:)
-      handler_registry.register(handler, levels: levels)
+    def register_handler(handler, process_types:)
+      handler_registry.register(handler, process_types: process_types)
     end
 
     def dispatch(event)

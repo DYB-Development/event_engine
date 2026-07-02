@@ -4,17 +4,17 @@ class EventEngine::HandlerRegistryTest < ActiveSupport::TestCase
   test "dispatches an event to a registered handler" do
     registry = EventEngine::HandlerRegistry.new
     received = []
-    registry.register(->(event) { received << event }, levels: [ :durable, :broker ])
+    registry.register(->(event) { received << event }, process_types: [ :durable, :broker ])
 
     registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, process_type: :durable, payload: {}))
 
     assert_equal 1, received.size
   end
 
-  test "skips a handler whose levels exclude the event's process_type" do
+  test "skips a handler whose process_types exclude the event's process_type" do
     registry = EventEngine::HandlerRegistry.new
     received = []
-    registry.register(->(event) { received << event }, levels: [ :telemetry ])
+    registry.register(->(event) { received << event }, process_types: [ :telemetry ])
 
     registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, process_type: :durable, payload: {}))
 
@@ -24,7 +24,7 @@ class EventEngine::HandlerRegistryTest < ActiveSupport::TestCase
   test "an :all handler receives an event of any process_type" do
     registry = EventEngine::HandlerRegistry.new
     received = []
-    registry.register(->(event) { received << event }, levels: :all)
+    registry.register(->(event) { received << event }, process_types: :all)
 
     registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, process_type: :sourced, payload: {}))
 
@@ -41,7 +41,7 @@ class EventEngine::HandlerRegistryTest < ActiveSupport::TestCase
   test "clear! removes registrations" do
     registry = EventEngine::HandlerRegistry.new
     received = []
-    registry.register(->(event) { received << event }, levels: :all)
+    registry.register(->(event) { received << event }, process_types: :all)
     registry.clear!
 
     registry.dispatch(EventEngine::Event.new(event_name: :thing_happened, process_type: :inline, payload: {}))

@@ -44,7 +44,7 @@ module EventEngine
 
     test "emit dispatches a built event to a registered handler" do
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 
@@ -53,7 +53,7 @@ module EventEngine
 
     test "the dispatched event carries the declared process_type" do
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 
@@ -62,7 +62,7 @@ module EventEngine
 
     test "the dispatched event carries the declared subject" do
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 
@@ -71,7 +71,7 @@ module EventEngine
 
     test "the dispatched event carries the declared domain" do
       received = []
-      EventEngine.register_handler(->(event) { received << event }, levels: :all)
+      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 

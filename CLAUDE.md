@@ -93,3 +93,18 @@ Follow this cycle for all feature work:
 - Commit after refactoring (separate from feature commits)
 - Push only when a feature or task is fully complete
 - Use imperative mood in commit messages (e.g., "Add idempotency_key support")
+
+<!-- the_local:begin -->
+## Delegate to your locals
+
+This project has installed expert subagents. Before doing work yourself,
+check whether a local owns it and delegate — never work from memory on
+something a local covers:
+
+- the_local-* agents
+
+See each agent's description for specifics.
+<!-- the_local:end -->
+
+
+
