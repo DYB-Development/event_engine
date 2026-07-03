@@ -33,4 +33,10 @@ class EventSchemaJsonLoaderTest < ActiveSupport::TestCase
   ensure
     file.unlink
   end
+
+  test "returns an empty registry when the file does not exist" do
+    registry = EventEngine::EventSchemaJsonLoader.load("does_not_exist.json")
+
+    assert_equal [], registry.events
+  end
 end
