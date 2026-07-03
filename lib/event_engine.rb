@@ -164,7 +164,7 @@ module EventEngine
     #
     # @return [SchemaRegistry]
     def file_schema_registry
-      loaded = EventSchemaLoader.load(Rails.root.join("db/event_schema.rb"))
+      loaded = EventSchemaJsonLoader.load(Rails.root.join("db/event_schema.json"))
       registry = SchemaRegistry.new
       registry.load_from_schema!(loaded)
       registry
