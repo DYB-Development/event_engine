@@ -1,5 +1,6 @@
 require "test_helper"
 require "tempfile"
+require "json"
 
 class EventSchemaDumpTest < ActiveSupport::TestCase
   class CowFed < EventEngine::EventDefinition
@@ -45,6 +46,29 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
     assert_equal [1], versions
   ensure
     file.unlink
+  end
+
+  test "dump reads prior versions from the JSON artifact" do
+    schema_file = Tempfile.new("event_schema.rb")
+    schema_path = schema_file.path
+    schema_file.unlink # the Ruby artifact carries no prior history
+    json_file = Tempfile.new(["event_schema", ".json"])
+
+    prior = CowFed.schema.dup
+    prior.event_version = 5
+    json_file.write(JSON.pretty_generate([prior.to_h]))
+    json_file.close
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed],
+      path: schema_path,
+      json_path: json_file.path
+    )
+
+    assert_equal [5], read_versions(schema_path)
+  ensure
+    File.delete(schema_path) if File.exist?(schema_path)
+    json_file.unlink
   end
 
   test "dump writes the neutral JSON artifact when a json path is given" do
