@@ -22,6 +22,15 @@ module EventEngine
         keyword_init: true
       )
 
+        # Reconstructs a Schema from the plain hash produced by {#to_h}.
+        # The derived +fingerprint+ key is ignored; it is not a struct member.
+        #
+        # @param hash [Hash]
+        # @return [Schema]
+        def self.from_h(hash)
+          new(**hash.reject { |key, _| key.to_sym == :fingerprint })
+        end
+
         # Returns a SHA256 fingerprint of the schema's canonical representation.
         # Used to detect schema changes and trigger version bumps.
         #
