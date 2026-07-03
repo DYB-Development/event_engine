@@ -136,7 +136,7 @@ module EventEngine
     # @param registry [SchemaRegistry] the registry to populate
     # @return [EventSchema] the loaded schema
     def boot_from_schema!(schema_path:, registry:)
-      event_schema = EventSchemaLoader.load(schema_path)
+      event_schema = EventSchemaJsonLoader.load(schema_path)
 
       registry.reset!
       registry.load_from_schema!(event_schema)
