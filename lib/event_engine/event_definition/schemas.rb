@@ -22,13 +22,37 @@ module EventEngine
         keyword_init: true
       )
 
-        # Reconstructs a Schema from the plain hash produced by {#to_h}.
+        # Reconstructs a Schema from the plain hash produced by {#to_h}, whether
+        # its keys and values are symbols (in-memory) or strings (JSON-parsed).
         # The derived +fingerprint+ key is ignored; it is not a struct member.
         #
         # @param hash [Hash]
         # @return [Schema]
         def self.from_h(hash)
-          new(**hash.reject { |key, _| key.to_sym == :fingerprint })
+          h = hash.transform_keys(&:to_sym)
+
+          new(
+            event_name: h[:event_name]&.to_sym,
+            event_version: h[:event_version],
+            event_type: h[:event_type]&.to_sym,
+            process_type: h[:process_type]&.to_sym,
+            subject: h[:subject]&.to_sym,
+            domain: h[:domain]&.to_sym,
+            required_inputs: Array(h[:required_inputs]).map(&:to_sym),
+            optional_inputs: Array(h[:optional_inputs]).map(&:to_sym),
+            payload_fields: Array(h[:payload_fields]).map { |field| payload_field_from_h(field) }
+          )
+        end
+
+        def self.payload_field_from_h(field)
+          f = field.transform_keys(&:to_sym)
+
+          {
+            name: f[:name]&.to_sym,
+            required: f[:required],
+            from: f[:from]&.to_sym,
+            attr: f[:attr]&.to_sym
+          }
         end
 
         # Returns a SHA256 fingerprint of the schema's canonical representation.

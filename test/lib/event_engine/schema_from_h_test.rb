@@ -1,4 +1,5 @@
 require "test_helper"
+require "json"
 
 class SchemaFromHTest < ActiveSupport::TestCase
   def build_schema
@@ -21,5 +22,13 @@ class SchemaFromHTest < ActiveSupport::TestCase
     schema = build_schema
 
     assert_equal schema, EventEngine::EventDefinition::Schema.from_h(schema.to_h)
+  end
+
+  test "from_h reconstructs a Schema from the JSON-parsed hash" do
+    schema = build_schema
+
+    parsed = JSON.parse(JSON.generate(schema.to_h))
+
+    assert_equal schema, EventEngine::EventDefinition::Schema.from_h(parsed)
   end
 end
