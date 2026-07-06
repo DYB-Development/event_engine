@@ -27,9 +27,9 @@ class EngineBootTest < ActiveSupport::TestCase
     event_schema = cow_fed_schema
 
     Dir.mktmpdir do |dir|
-      schema_path = File.join(dir, "event_schema.rb")
+      schema_path = File.join(dir, "event_schema.json")
       helpers_path = File.join(dir, "event_engine_helpers.rb")
-      EventEngine::EventSchemaWriter.write(schema_path, event_schema)
+      EventEngine::EventSchemaJsonWriter.write(schema_path, event_schema)
       EventEngine::EventEngineHelpersWriter.write(helpers_path, event_schema)
 
       EventEngine::Engine.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)

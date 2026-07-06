@@ -4,7 +4,7 @@ module EventEngine
 
     initializer "event_engine.load_schema_and_helpers" do |app|
       app.config.after_initialize do
-        schema_path = Rails.root.join("db", "event_schema.rb")
+        schema_path = Rails.root.join("db", "event_schema.json")
         helpers_path = Rails.root.join("db", "event_engine_helpers.rb")
 
         if File.exist?(schema_path)

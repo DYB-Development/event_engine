@@ -15,6 +15,7 @@ require "event_engine/dsl_compiler"
 require "event_engine/event_schema_loader"
 require "event_engine/event_schema_writer"
 require "event_engine/event_schema_json_writer"
+require "event_engine/event_schema_json_loader"
 require "event_engine/event_engine_helpers_writer"
 require "event_engine/event_schema_merger"
 require "event_engine/event_schema_dumper"
@@ -135,7 +136,7 @@ module EventEngine
     # @param registry [SchemaRegistry] the registry to populate
     # @return [EventSchema] the loaded schema
     def boot_from_schema!(schema_path:, registry:)
-      event_schema = EventSchemaLoader.load(schema_path)
+      event_schema = EventSchemaJsonLoader.load(schema_path)
 
       registry.reset!
       registry.load_from_schema!(event_schema)
@@ -163,7 +164,7 @@ module EventEngine
     #
     # @return [SchemaRegistry]
     def file_schema_registry
-      loaded = EventSchemaLoader.load(Rails.root.join("db/event_schema.rb"))
+      loaded = EventSchemaJsonLoader.load(Rails.root.join("db/event_schema.json"))
       registry = SchemaRegistry.new
       registry.load_from_schema!(loaded)
       registry

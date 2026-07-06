@@ -67,7 +67,8 @@ bundle install
    ```bash
    bin/rails event_engine:schema:dump
    ```
-3. **Commit `db/event_schema.rb`** — it is authoritative at runtime.
+3. **Commit `db/event_schema.json`** — it is authoritative at runtime. (The dump
+   also writes `db/event_schema.rb`, a human-readable convenience; commit it too.)
 4. **Register at least one handler** so emitted events do something. Either add a
    companion gem (`event_engine-delivery` / `event_engine-store`) or write your own
    (see [The handler extension point](#the-handler-extension-point)).
@@ -88,7 +89,8 @@ bundle install
 EventDefinition (Ruby DSL)
         │  bin/rails event_engine:schema:dump
         ▼
-db/event_schema.rb   ◄── authoritative at runtime; commit it
+db/event_schema.json ◄── authoritative at runtime; commit it
+        │  (db/event_schema.rb is also written as a readable convenience)
         │  Rails boot (Engine initializer)
         ▼
 SchemaRegistry  ──► installs EventEngine.<event_name> helpers
@@ -104,8 +106,9 @@ HandlerRegistry ──► every registered handler whose `levels:` match event_l
 Two things are worth internalizing:
 
 1. **The committed schema file — not your definition classes — is the source of
-   truth at runtime.** Definition classes are read only at *dump* time. In
-   production a missing `db/event_schema.rb` raises at boot.
+   truth at runtime.** The engine loads `db/event_schema.json` at boot (no Ruby is
+   evaluated from a schema file). Definition classes are read only at *dump* time.
+   In production a missing `db/event_schema.json` raises at boot.
 2. **Emitting and handling are decoupled.** `EventEngine.dispatch` just fans the
    event out to handlers by level. The core gem ships *no* handlers.
 
@@ -273,9 +276,11 @@ end
 
 Alongside `db/event_schema.rb`, the dump writes `db/event_schema.json` — the same
 compiled schema as plain, versioned data that BI/data consumers can read **without
-running Ruby or evaluating the executable schema file**. It is purely additive: the
-Ruby file and the runtime boot path are unchanged. **Commit it** next to the Ruby
-file.
+running Ruby or evaluating the executable schema file**. This JSON artifact is
+**canonical at runtime**: the engine loads it at boot and reconstructs the registry
+from it, so no code is executed from a schema file. `db/event_schema.rb` is still
+generated and committed as a human-readable convenience, but it is no longer read at
+boot (a follow-up will retire it). **Commit both** files.
 
 It is a JSON array with one object per event **and version**, sorted by
 `event_name` then `event_version`, and re-dumping an unchanged schema produces
@@ -339,7 +344,7 @@ and `event_engine:schema_check` tasks perform the same check without the diff.
 
 ## Emitting events
 
-At boot the engine loads `db/event_schema.rb` and installs a singleton helper on
+At boot the engine loads `db/event_schema.json` and installs a singleton helper on
 `EventEngine` for each event. Pass declared inputs by keyword, plus optional
 emit-time envelope fields:
 
