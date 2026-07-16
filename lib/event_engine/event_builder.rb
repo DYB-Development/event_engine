@@ -1,13 +1,5 @@
 module EventEngine
-  # Constructs an event payload hash from a schema and input data.
-  # Validates that required inputs are present and no unknown inputs are passed.
   class EventBuilder
-    # Builds an event attributes hash from schema and input data.
-    #
-    # @param schema [EventDefinition::Schema] the event schema
-    # @param data [Hash] input data keyed by input name
-    # @return [Hash] event attributes including :event_name, :event_type, :event_version, :payload
-    # @raise [ArgumentError] if required inputs are missing or unknown inputs are provided
     def self.build(schema:, data:)
       validate_inputs!(schema, data)
 
