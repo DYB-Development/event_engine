@@ -16,9 +16,9 @@ class EventSchemaTest < ActiveSupport::TestCase
 
     by_event = event_schema.schemas_by_event
 
-    assert by_event.key?(:cow_fed)
-    assert by_event[:cow_fed].key?(1)
-    assert_equal schema, by_event[:cow_fed][1]
+    assert by_event.key?([nil, :cow_fed])
+    assert by_event[[nil, :cow_fed]].key?(1)
+    assert_equal schema, by_event[[nil, :cow_fed]][1]
   end
 
   test "register supports multiple versions for the same event_name" do
@@ -44,13 +44,41 @@ class EventSchemaTest < ActiveSupport::TestCase
     event_schema.register(v1)
     event_schema.register(v2)
 
-    versions = event_schema.schemas_by_event[:cow_fed].keys.sort
+    versions = event_schema.schemas_by_event[[nil, :cow_fed]].keys.sort
     assert_equal [1, 2], versions
   end
 
-  test "register raises a named error on a duplicate event_name" do
+  test "register allows the same event_name under different domains" do
+    sales = EventEngine::EventDefinition::Schema.new(
+      event_name: :deal_won,
+      event_version: 1,
+      event_type: :domain,
+      domain: :sales,
+      required_inputs: [],
+      optional_inputs: [],
+      payload_fields: []
+    )
+
+    marketing = EventEngine::EventDefinition::Schema.new(
+      event_name: :deal_won,
+      event_version: 1,
+      event_type: :domain,
+      domain: :marketing,
+      required_inputs: [],
+      optional_inputs: [],
+      payload_fields: []
+    )
+
+    event_schema = EventEngine::EventSchema.new
+    event_schema.register(sales)
+
+    assert_nothing_raised { event_schema.register(marketing) }
+  end
+
+  test "register raises a named error on a duplicate (domain, event_name)" do
     a = EventEngine::EventDefinition::Schema.new(
       event_name: :deal_won,
+      event_version: 1,
       event_type: :domain,
       domain: :sales,
       required_inputs: [],
@@ -60,8 +88,9 @@ class EventSchemaTest < ActiveSupport::TestCase
 
     b = EventEngine::EventDefinition::Schema.new(
       event_name: :deal_won,
+      event_version: 1,
       event_type: :domain,
-      domain: :marketing,
+      domain: :sales,
       required_inputs: [],
       optional_inputs: [],
       payload_fields: []
@@ -74,6 +103,6 @@ class EventSchemaTest < ActiveSupport::TestCase
       event_schema.register(b)
     end
 
-    assert_match(/deal_won.*sales.*marketing/m, error.message)
+    assert_match(/sales.*deal_won/m, error.message)
   end
 end
