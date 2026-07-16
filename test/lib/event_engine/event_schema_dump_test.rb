@@ -11,6 +11,14 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
     required_payload :weight, from: :cow, attr: :weight
   end
 
+  class PigWeighed < EventEngine::EventDefinition
+    event_name :pig_weighed
+    event_type :domain
+    domain :ops
+    input :pig
+    required_payload :weight, from: :pig, attr: :weight
+  end
+
   def read_versions(path)
     File.read(path).scan(/event_version:\s*(\d+)/).flatten.map(&:to_i)
   end
@@ -83,6 +91,24 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
     )
 
     assert_includes File.read(json_file.path), %("event_name": "cow_fed")
+  ensure
+    schema_file.unlink
+    json_file.unlink
+  end
+
+  test "dump scoped to a domain writes only that domain's events to the JSON slice" do
+    schema_file = Tempfile.new("event_schema.rb")
+    json_file = Tempfile.new(["event_schema", ".json"])
+
+    EventEngine::EventSchemaDumper.dump!(
+      definitions: [CowFed, PigWeighed],
+      path: schema_file.path,
+      json_path: json_file.path,
+      domain: :sales
+    )
+
+    event_names = JSON.parse(File.read(json_file.path)).map { |event| event["event_name"] }
+    assert_equal ["cow_fed"], event_names
   ensure
     schema_file.unlink
     json_file.unlink
