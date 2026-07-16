@@ -77,4 +77,16 @@ class RegisterSliceTest < ActiveSupport::TestCase
     cow.unlink
     pig.unlink
   end
+
+  test "merging a second slice does not raise RegistryFrozenError" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    first = write_slice(build_schema(:cow_fed))
+    second = write_slice(build_schema(:pig_weighed))
+    EventEngine.register_slice!(schema_path: first.path)
+
+    assert_nothing_raised { EventEngine.register_slice!(schema_path: second.path) }
+  ensure
+    first.unlink
+    second.unlink
+  end
 end
