@@ -69,17 +69,18 @@ module EventEngine
     #
     # @param event_name [Symbol]
     # @param version [Integer, nil] specific version, or nil for latest
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [EventDefinition::Schema]
     # @raise [RegistryFrozenError] if registry is not loaded
     # @raise [UnknownEventError] if event or version is not found
-    def schema(event_name, version: nil)
+    def schema(event_name, version: nil, domain: nil)
       raise RegistryFrozenError, "EventRegistry not loaded" unless loaded?
 
       schema =
         if version
-          @event_schema.schema_for(event_name, version)
+          @event_schema.schema_for(event_name, version, domain: domain)
         else
-          @event_schema.latest_for(event_name)
+          @event_schema.latest_for(event_name, domain: domain)
         end
 
       unless schema
