@@ -311,6 +311,52 @@ Each object carries the event's identity (`event_name`, `event_version`,
 `from`, `attr`, `required`), and the `fingerprint` used for version bumping. This
 is documented plain JSON — not a formal JSON Schema.
 
+### Events from more than one gem
+
+A host app is not the only source of events. A separate gem — say
+`marketing_events` — can ship its **own** event definitions, compile them into its
+**own** committed `event_schema.json` and helpers, and contribute them to the host
+at boot without the host ever recompiling.
+
+Each such source is a **generator**. A generator compiles only the definitions it
+owns (the ones loaded in its own dump context) into its own committed artifacts:
+
+```ruby
+EventEngine::EventSchemaDumper.dump!(
+  definitions: EventEngine::EventDefinition.descendants,
+  path: MarketingEvents::Engine.root.join("db/event_schema.rb"),
+  json_path: MarketingEvents::Engine.root.join("db/event_schema.json"),
+  helpers_path: MarketingEvents::Engine.root.join("db/event_engine_helpers.rb")
+)
+```
+
+> `domain` does **not** define a generator. It only categorizes events — two gems
+> may emit into the same domain, and one gem may span several. What a generator
+> owns is simply the set of definitions it ships.
+
+At boot the generator self-registers its committed slice into the shared registry
+from its own railtie, and loads its own helpers:
+
+```ruby
+module MarketingEvents
+  class Engine < ::Rails::Engine
+    initializer "marketing_events.register_events" do
+      config.after_initialize do
+        EventEngine.register_slice!(
+          schema_path: MarketingEvents::Engine.root.join("db/event_schema.json")
+        )
+        load MarketingEvents::Engine.root.join("db/event_engine_helpers.rb")
+      end
+    end
+  end
+end
+```
+
+`register_slice!` is **additive**: each generator's slice merges into the shared
+registry without evicting the others and without needing any other generator's
+definitions to be loaded. Every event — host's and gems' alike — is then emittable
+in the same host app.
+
 ### How versioning works
 
 The dumper is **append-only and additive** — it never edits an existing version in
