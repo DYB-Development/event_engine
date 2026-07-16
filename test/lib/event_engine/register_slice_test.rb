@@ -49,4 +49,44 @@ class RegisterSliceTest < ActiveSupport::TestCase
     first.unlink
     second.unlink
   end
+
+  test "the second slice's own events are resolvable" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    first = write_slice(build_schema(:cow_fed))
+    second = write_slice(build_schema(:pig_weighed))
+
+    EventEngine.register_slice!(schema_path: first.path)
+    EventEngine.register_slice!(schema_path: second.path)
+
+    assert_equal 1, EventEngine.schema_registry.schema(:pig_weighed).event_version
+  ensure
+    first.unlink
+    second.unlink
+  end
+
+  test "merging is order-independent for non-colliding keys" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    cow = write_slice(build_schema(:cow_fed))
+    pig = write_slice(build_schema(:pig_weighed))
+
+    EventEngine.register_slice!(schema_path: pig.path)
+    EventEngine.register_slice!(schema_path: cow.path)
+
+    assert_equal 1, EventEngine.schema_registry.schema(:cow_fed).event_version
+  ensure
+    cow.unlink
+    pig.unlink
+  end
+
+  test "merging a second slice does not raise RegistryFrozenError" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    first = write_slice(build_schema(:cow_fed))
+    second = write_slice(build_schema(:pig_weighed))
+    EventEngine.register_slice!(schema_path: first.path)
+
+    assert_nothing_raised { EventEngine.register_slice!(schema_path: second.path) }
+  ensure
+    first.unlink
+    second.unlink
+  end
 end
