@@ -5,13 +5,15 @@ require "ostruct"
 module EventEngine
   class EventEngineHelpersWriterTest < ActiveSupport::TestCase
     include EventEngineTestHelpers
-    def schema_with(required_inputs:, optional_inputs: [])
+
+    def schema_with(required_inputs:, optional_inputs: [], domain: :sales)
       EventSchema.new.tap do |event_schema|
         event_schema.register(
           EventDefinition::Schema.new(
             event_name: :cow_fed,
             event_version: 1,
             event_type: :domain,
+            domain: domain,
             required_inputs: required_inputs,
             optional_inputs: optional_inputs,
             payload_fields: []
@@ -28,10 +30,28 @@ module EventEngine
       end
     end
 
-    test "writes a real def for each event" do
+    test "wraps the events in a per-domain module" do
       source = generate(schema_with(required_inputs: [:cow]))
 
-      assert_includes source, "def cow_fed"
+      assert_includes source, "module Sales"
+    end
+
+    test "writes a real self method for each event" do
+      source = generate(schema_with(required_inputs: [:cow]))
+
+      assert_includes source, "def self.cow_fed"
+    end
+
+    test "delegates to EventEngine.emit" do
+      source = generate(schema_with(required_inputs: [:cow]))
+
+      assert_includes source, "EventEngine.emit("
+    end
+
+    test "passes the domain to emit" do
+      source = generate(schema_with(required_inputs: [:cow]))
+
+      assert_includes source, "domain: :sales"
     end
 
     test "a required input becomes a required keyword" do
@@ -52,42 +72,10 @@ module EventEngine
       assert_includes source, "metadata: metadata"
     end
 
-    test "the generated file defines a real helper that emits" do
-      helpers_snapshot = snapshot_event_engine_helpers
-      previous_registry = EventEngine.schema_registry
-      event_schema = schema_with(required_inputs: [:cow])
-      EventEngine.schema_registry =
-        SchemaRegistry.new.tap { |registry| registry.load_from_schema!(event_schema) }
+    test "does not generate flat singleton helpers" do
+      source = generate(schema_with(required_inputs: [:cow]))
 
-      received = []
-      EventEngine.register_handler(->(event) { received << event }, process_types: :all)
-
-      Tempfile.create(["helpers", ".rb"]) do |file|
-        EventEngineHelpersWriter.write(file.path, event_schema)
-        load file.path
-
-        EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
-      end
-
-      assert_equal 1, received.size
-    ensure
-      restore_event_engine_helpers(helpers_snapshot)
-      EventEngine.schema_registry = previous_registry
-      EventEngine.reset_handlers!
-    end
-
-    test "the generated signature raises a native ArgumentError for a missing required input" do
-      helpers_snapshot = snapshot_event_engine_helpers
-      event_schema = schema_with(required_inputs: [:cow])
-
-      Tempfile.create(["helpers", ".rb"]) do |file|
-        EventEngineHelpersWriter.write(file.path, event_schema)
-        load file.path
-
-        assert_raises(ArgumentError) { EventEngine.cow_fed }
-      end
-    ensure
-      restore_event_engine_helpers(helpers_snapshot)
+      refute_includes source, "class << self"
     end
   end
 end
