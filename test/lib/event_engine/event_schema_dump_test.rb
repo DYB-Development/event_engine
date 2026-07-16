@@ -6,6 +6,7 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
   class CowFed < EventEngine::EventDefinition
     event_name :cow_fed
     event_type :domain
+    domain :sales
     input :cow
     required_payload :weight, from: :cow, attr: :weight
   end
@@ -97,7 +98,7 @@ class EventSchemaDumpTest < ActiveSupport::TestCase
       helpers_path: helpers_file.path
     )
 
-    assert_includes File.read(helpers_file.path), "def cow_fed"
+    assert_includes File.read(helpers_file.path), "def self.cow_fed"
   ensure
     schema_file.unlink
     helpers_file.unlink
