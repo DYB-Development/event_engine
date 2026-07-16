@@ -72,4 +72,13 @@ class EventSchemaQueryTest < ActiveSupport::TestCase
 
     assert_equal sales_v2, es.latest_for(:deal_won, domain: :sales)
   end
+
+  test "versions_for resolves versions within the requested domain" do
+    es = EventEngine::EventSchema.new
+    es.register(build_schema(event_name: :deal_won, version: 1, domain: :sales))
+    es.register(build_schema(event_name: :deal_won, version: 2, domain: :sales))
+    es.register(build_schema(event_name: :deal_won, version: 3, domain: :marketing))
+
+    assert_equal [1, 2], es.versions_for(:deal_won, domain: :sales)
+  end
 end

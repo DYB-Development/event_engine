@@ -53,9 +53,10 @@ module EventEngine
     # Returns sorted version numbers for a given event.
     #
     # @param event_name [Symbol]
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [Array<Integer>]
-    def versions_for(event_name)
-      version_sets_for(event_name).flat_map(&:keys).uniq.sort
+    def versions_for(event_name, domain: nil)
+      version_sets_for(event_name, domain).flat_map(&:keys).uniq.sort
     end
 
     # Returns the schema for a specific event name and version.
