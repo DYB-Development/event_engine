@@ -26,35 +26,12 @@ require "event_engine/railtie"
 require "event_engine/definition_loader"
 require "event_engine/the_local"
 
-# EventEngine is the schema-first core of the event pipeline.
-#
-# Events are defined via a Ruby DSL and compiled into a canonical schema file.
-# The dump also generates a committed helpers file with one real +def+ per
-# event, namespaced under a per-domain module (e.g.
-# +EventEngine::Sales.cow_fed(cow: cow)+) that delegates to {emit}, the single
-# path that validates inputs, builds an +Event+, and dispatches it to
-# registered handlers. Companion gems (e.g. event_engine-delivery) register
-# handlers to process the events.
-#
-# @example Define, build, and dispatch an event
-#   EventEngine.register_handler(MyHandler, process_types: :all)
-#   EventEngine::Sales.cow_fed(cow: cow, occurred_at: Time.current)
 module EventEngine
   class << self
-    # Returns the current configuration instance.
-    #
-    # @return [Configuration]
     def configuration
       @configuration ||= Configuration.new
     end
 
-    # Yields the configuration for modification.
-    #
-    # @yieldparam config [Configuration] the configuration instance
-    # @example
-    #   EventEngine.configure do |config|
-    #     config.logger = Rails.logger
-    #   end
     def configure
       yield(configuration)
     end
@@ -129,13 +106,6 @@ module EventEngine
       handler_registry.clear!
     end
 
-    # Loads a schema file and populates the module-level registry that
-    # {emit} and the generated helper methods read from. Called automatically
-    # by the engine at Rails boot.
-    #
-    # @param schema_path [String, Pathname] path to the compiled schema file
-    # @param registry [SchemaRegistry] the registry to populate
-    # @return [EventSchema] the loaded schema
     def boot_from_schema!(schema_path:, registry:)
       event_schema = EventSchemaJsonLoader.load(schema_path)
 
@@ -158,10 +128,6 @@ module EventEngine
       schema_registry
     end
 
-    # Compiles event definitions from source into a registry.
-    # Used by rake tasks for schema drift detection.
-    #
-    # @return [SchemaRegistry]
     def compiled_schema_registry
       DefinitionLoader.ensure_loaded!
       definitions = EventDefinition.descendants
@@ -171,10 +137,6 @@ module EventEngine
       registry
     end
 
-    # Loads the committed schema file into a registry.
-    # Used by rake tasks for schema drift detection.
-    #
-    # @return [SchemaRegistry]
     def file_schema_registry
       loaded = EventSchemaJsonLoader.load(Rails.root.join("db/event_schema.json"))
       registry = SchemaRegistry.new
