@@ -45,9 +45,13 @@ module EventEngine
 
     # Returns all registered event names.
     #
+    # @param domain [Symbol, nil] restricts the names to a single domain
     # @return [Array<Symbol>]
-    def events
-      @schemas_by_event.keys.map { |(_domain, event_name)| event_name }.uniq
+    def events(domain: nil)
+      @schemas_by_event.keys
+        .select { |(schema_domain, _name)| domain.nil? || schema_domain == domain }
+        .map { |(_domain, event_name)| event_name }
+        .uniq
     end
 
     # Returns sorted version numbers for a given event.

@@ -81,4 +81,12 @@ class EventSchemaQueryTest < ActiveSupport::TestCase
 
     assert_equal [1, 2], es.versions_for(:deal_won, domain: :sales)
   end
+
+  test "events resolves event names within the requested domain" do
+    es = EventEngine::EventSchema.new
+    es.register(build_schema(event_name: :deal_won, version: 1, domain: :sales))
+    es.register(build_schema(event_name: :lead_created, version: 1, domain: :marketing))
+
+    assert_equal [:deal_won], es.events(domain: :sales)
+  end
 end
