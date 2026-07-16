@@ -15,13 +15,13 @@ module EventEngine
       aggregate_version
     ].freeze
 
-    def self.compile(definitions, origin_of: method(:origin_of))
+    def self.compile(definitions, origin_of: method(:origin_of), report: method(:warn))
       registry = SchemaRegistry.new
       subject_violations = []
       name_violations = []
       reserved_violations = []
 
-      resolve_overrides(Array(definitions), origin_of).each do |definition|
+      resolve_overrides(Array(definitions), origin_of, report).each do |definition|
         schema = definition.schema
         record_subject_violation(schema, subject_violations)
         record_name_violation(schema, name_violations)
@@ -36,19 +36,29 @@ module EventEngine
       registry
     end
 
-    def self.resolve_overrides(definitions, origin_of)
+    def self.resolve_overrides(definitions, origin_of, report)
       definitions.group_by { |definition| identity(definition) }.flat_map do |_identity, group|
-        resolve_group(group, origin_of)
+        resolve_group(group, origin_of, report)
       end
     end
 
-    def self.resolve_group(group, origin_of)
+    def self.resolve_group(group, origin_of, report)
       return group if group.one?
 
       locals = group.select { |definition| origin_of.call(definition) == :local }
       return group unless locals.one?
 
+      winner = locals.first
+      (group - locals).each { |shadowed| report.call(override_notice(winner, shadowed)) }
       locals
+    end
+
+    def self.override_notice(winner, shadowed)
+      schema = winner.schema
+
+      "EventEngine: local definition #{winner.name || winner} overrides packaged event " \
+        "#{schema.event_name.inspect} (domain #{schema.domain.inspect}) " \
+        "from #{source_path(shadowed) || shadowed}"
     end
 
     def self.identity(definition)

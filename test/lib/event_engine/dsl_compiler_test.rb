@@ -67,6 +67,30 @@ class DslCompilerTest < ActiveSupport::TestCase
     assert_equal [:buyer], registry.latest_for(:deal_won).required_inputs
   end
 
+  test "reports each local-over-pack override so it is never silent" do
+    packaged = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+      input :account
+    end
+
+    local = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+      input :buyer
+    end
+
+    origin_of = ->(definition) { definition == local ? :local : :packaged }
+    messages = []
+    EventEngine::DslCompiler.compile(
+      [packaged, local], origin_of: origin_of, report: messages.method(:<<)
+    )
+
+    assert_includes messages.first, "deal_won"
+  end
+
   test "raises when an input name collides with a reserved envelope key" do
     colliding = Class.new(EventEngine::EventDefinition) do
       event_name :cow_fed
