@@ -46,6 +46,27 @@ class DslCompilerTest < ActiveSupport::TestCase
     end
   end
 
+  test "a local definition overrides a packaged definition sharing the same event_name" do
+    packaged = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+      input :account
+    end
+
+    local = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+      input :buyer
+    end
+
+    origin_of = ->(definition) { definition == local ? :local : :packaged }
+    registry = EventEngine::DslCompiler.compile([packaged, local], origin_of: origin_of)
+
+    assert_equal [:buyer], registry.latest_for(:deal_won).required_inputs
+  end
+
   test "raises when an input name collides with a reserved envelope key" do
     colliding = Class.new(EventEngine::EventDefinition) do
       event_name :cow_fed

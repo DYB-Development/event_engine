@@ -15,13 +15,13 @@ module EventEngine
       aggregate_version
     ].freeze
 
-    def self.compile(definitions)
+    def self.compile(definitions, origin_of: method(:origin_of))
       registry = SchemaRegistry.new
       subject_violations = []
       name_violations = []
       reserved_violations = []
 
-      Array(definitions).each do |definition|
+      resolve_overrides(Array(definitions), origin_of).each do |definition|
         schema = definition.schema
         record_subject_violation(schema, subject_violations)
         record_name_violation(schema, name_violations)
@@ -34,6 +34,44 @@ module EventEngine
       raise_unknown_subjects(subject_violations)
 
       registry
+    end
+
+    def self.resolve_overrides(definitions, origin_of)
+      definitions.group_by { |definition| identity(definition) }.flat_map do |_identity, group|
+        resolve_group(group, origin_of)
+      end
+    end
+
+    def self.resolve_group(group, origin_of)
+      return group if group.one?
+
+      locals = group.select { |definition| origin_of.call(definition) == :local }
+      return group unless locals.one?
+
+      locals
+    end
+
+    def self.identity(definition)
+      schema = definition.schema
+      [schema.domain, schema.event_name]
+    end
+
+    def self.origin_of(definition)
+      path = source_path(definition)
+      local_path?(path) ? :local : :packaged
+    end
+
+    def self.source_path(definition)
+      return nil unless definition.name
+
+      Object.const_source_location(definition.name)&.first
+    end
+
+    def self.local_path?(path)
+      return false unless path
+      return false unless defined?(Rails) && Rails.respond_to?(:root) && Rails.root
+
+      path.to_s.start_with?(Rails.root.to_s)
     end
 
     def self.record_name_violation(schema, violations)
