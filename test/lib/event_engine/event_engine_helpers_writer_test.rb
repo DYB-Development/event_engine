@@ -23,6 +23,25 @@ module EventEngine
       end
     end
 
+    def schema_across(domains)
+      EventSchema.new.tap do |event_schema|
+        domains.each do |domain|
+          event_schema.register(
+            EventDefinition::Schema.new(
+              event_name: :cow_fed,
+              event_version: 1,
+              event_type: :domain,
+              domain: domain,
+              required_inputs: [:cow],
+              optional_inputs: [],
+              payload_fields: []
+            )
+          )
+        end
+        event_schema.finalize!
+      end
+    end
+
     def generate(event_schema)
       Tempfile.create(["helpers", ".rb"]) do |file|
         EventEngineHelpersWriter.write(file.path, event_schema)
@@ -76,6 +95,18 @@ module EventEngine
       source = generate(schema_with(required_inputs: [:cow]))
 
       refute_includes source, "class << self"
+    end
+
+    test "each domain produces its own module" do
+      source = generate(schema_across([:sales, :marketing]))
+
+      assert_includes source, "module Marketing"
+    end
+
+    test "a same-named event in two domains does not collide" do
+      source = generate(schema_across([:sales, :marketing]))
+
+      assert_equal 2, source.scan("def self.cow_fed").size
     end
   end
 end
