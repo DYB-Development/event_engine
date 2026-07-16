@@ -49,4 +49,18 @@ class RegisterSliceTest < ActiveSupport::TestCase
     first.unlink
     second.unlink
   end
+
+  test "the second slice's own events are resolvable" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    first = write_slice(build_schema(:cow_fed))
+    second = write_slice(build_schema(:pig_weighed))
+
+    EventEngine.register_slice!(schema_path: first.path)
+    EventEngine.register_slice!(schema_path: second.path)
+
+    assert_equal 1, EventEngine.schema_registry.schema(:pig_weighed).event_version
+  ensure
+    first.unlink
+    second.unlink
+  end
 end
