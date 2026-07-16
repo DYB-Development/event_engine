@@ -62,4 +62,14 @@ class EventSchemaQueryTest < ActiveSupport::TestCase
 
     assert_equal sales, es.schema_for(:deal_won, 1, domain: :sales)
   end
+
+  test "latest_for resolves the highest version within the requested domain" do
+    es = EventEngine::EventSchema.new
+    sales_v2 = build_schema(event_name: :deal_won, version: 2, domain: :sales)
+    es.register(build_schema(event_name: :deal_won, version: 1, domain: :sales))
+    es.register(sales_v2)
+    es.register(build_schema(event_name: :deal_won, version: 3, domain: :marketing))
+
+    assert_equal sales_v2, es.latest_for(:deal_won, domain: :sales)
+  end
 end

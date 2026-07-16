@@ -72,9 +72,10 @@ module EventEngine
     # Returns the latest (highest version) schema for an event.
     #
     # @param event_name [Symbol]
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [EventDefinition::Schema, nil]
-    def latest_for(event_name)
-      merged = version_sets_for(event_name).reduce({}, :merge)
+    def latest_for(event_name, domain: nil)
+      merged = version_sets_for(event_name, domain).reduce({}, :merge)
       return nil if merged.empty?
       merged[merged.keys.max]
     end
