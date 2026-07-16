@@ -147,12 +147,6 @@ module EventEngine
       event_schema
     end
 
-    # Registers a generator's own schema slice into the shared registry,
-    # additively. Loads the registry first when it has not been booted, so a
-    # generator can self-register at boot without a central host compile.
-    #
-    # @param schema_path [String, Pathname] path to the generator's slice file
-    # @return [SchemaRegistry] the shared registry
     def register_slice!(schema_path:)
       slice = EventSchemaJsonLoader.load(schema_path)
 
