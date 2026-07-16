@@ -1,4 +1,5 @@
 require "test_helper"
+require "tmpdir"
 
 class DslCompilerTest < ActiveSupport::TestCase
   class CowFed < EventEngine::EventDefinition
@@ -7,6 +8,13 @@ class DslCompilerTest < ActiveSupport::TestCase
 
     input :cow
     required_payload :weight, from: :cow, attr: :weight
+  end
+
+  class PackagedDealWon < EventEngine::EventDefinition
+    event_name :deal_won
+    event_type :domain
+    domain :sales
+    input :account
   end
 
   test "compiles EventDefinition classes into a SchemaRegistry" do
@@ -109,6 +117,27 @@ class DslCompilerTest < ActiveSupport::TestCase
     assert_raises(EventEngine::EventSchema::DuplicateEventNameError) do
       EventEngine::DslCompiler.compile([one_local, another_local], origin_of: origin_of)
     end
+  end
+
+  test "resolves local-over-pack precedence using the real source-location detector" do
+    fixture = Rails.root.join("tmp", "local_deal_won_definition.rb")
+    FileUtils.mkdir_p(fixture.dirname)
+    fixture.write(<<~RUBY)
+      class LocalDealWonDefinition < EventEngine::EventDefinition
+        event_name :deal_won
+        event_type :domain
+        domain :sales
+        input :buyer
+      end
+    RUBY
+    require fixture.to_s
+
+    registry = EventEngine::DslCompiler.compile([PackagedDealWon, LocalDealWonDefinition])
+
+    assert_equal [:buyer], registry.latest_for(:deal_won).required_inputs
+  ensure
+    Object.send(:remove_const, :LocalDealWonDefinition) if defined?(LocalDealWonDefinition)
+    fixture&.delete if fixture&.exist?
   end
 
   test "raises when an input name collides with a reserved envelope key" do
