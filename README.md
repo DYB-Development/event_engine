@@ -330,10 +330,6 @@ EventEngine::EventSchemaDumper.dump!(
 )
 ```
 
-> `domain` does **not** define a generator. It only categorizes events — two gems
-> may emit into the same domain, and one gem may span several. What a generator
-> owns is simply the set of definitions it ships.
-
 At boot the generator self-registers its committed slice into the shared registry
 from its own railtie, and loads its own helpers:
 
