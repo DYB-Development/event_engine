@@ -311,6 +311,43 @@ Each object carries the event's identity (`event_name`, `event_version`,
 `from`, `attr`, `required`), and the `fingerprint` used for version bumping. This
 is documented plain JSON — not a formal JSON Schema.
 
+### Per-generator schema slices
+
+A **generator** is any source of events — the host app or an event gem that ships
+its own definitions. Each generator owns a single `domain` and dumps only **its
+own** events into its own slice file by scoping the dump:
+
+```ruby
+EventEngine::EventSchemaDumper.dump!(
+  definitions: EventEngine::EventDefinition.descendants,
+  path: MyGem::Engine.root.join("db/event_schema.rb"),
+  json_path: MyGem::Engine.root.join("db/event_schema.json"),
+  domain: :sales
+)
+```
+
+The slice is the generator's committed artifact — plain JSON, no definition
+classes needed to read it. A generator self-registers its slice into the shared
+registry at boot from its own railtie, so it works standalone without a central
+host recompile:
+
+```ruby
+module MyGem
+  class Engine < ::Rails::Engine
+    initializer "my_gem.register_event_slice" do
+      config.after_initialize do
+        EventEngine.register_slice!(
+          schema_path: MyGem::Engine.root.join("db/event_schema.json")
+        )
+      end
+    end
+  end
+end
+```
+
+`register_slice!` is additive: it merges the slice into the shared registry
+without requiring any other generator's definitions to be loaded.
+
 ### How versioning works
 
 The dumper is **append-only and additive** — it never edits an existing version in
