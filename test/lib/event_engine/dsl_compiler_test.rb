@@ -91,6 +91,26 @@ class DslCompilerTest < ActiveSupport::TestCase
     assert_includes messages.first, "deal_won"
   end
 
+  test "raises when two local definitions share an event_name (no single override winner)" do
+    one_local = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+    end
+
+    another_local = Class.new(EventEngine::EventDefinition) do
+      event_name :deal_won
+      event_type :domain
+      domain :sales
+    end
+
+    origin_of = ->(_definition) { :local }
+
+    assert_raises(EventEngine::EventSchema::DuplicateEventNameError) do
+      EventEngine::DslCompiler.compile([one_local, another_local], origin_of: origin_of)
+    end
+  end
+
   test "raises when an input name collides with a reserved envelope key" do
     colliding = Class.new(EventEngine::EventDefinition) do
       event_name :cow_fed
