@@ -63,4 +63,18 @@ class RegisterSliceTest < ActiveSupport::TestCase
     first.unlink
     second.unlink
   end
+
+  test "merging is order-independent for non-colliding keys" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    cow = write_slice(build_schema(:cow_fed))
+    pig = write_slice(build_schema(:pig_weighed))
+
+    EventEngine.register_slice!(schema_path: pig.path)
+    EventEngine.register_slice!(schema_path: cow.path)
+
+    assert_equal 1, EventEngine.schema_registry.schema(:cow_fed).event_version
+  ensure
+    cow.unlink
+    pig.unlink
+  end
 end
