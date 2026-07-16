@@ -1,11 +1,12 @@
 require "test_helper"
 
 class EventSchemaQueryTest < ActiveSupport::TestCase
-  def build_schema(event_name:, version:)
+  def build_schema(event_name:, version:, domain: nil)
     EventEngine::EventDefinition::Schema.new(
       event_name: event_name,
       event_version: version,
       event_type: :domain,
+      domain: domain,
       required_inputs: [:cow],
       optional_inputs: [],
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
@@ -50,5 +51,15 @@ class EventSchemaQueryTest < ActiveSupport::TestCase
   test "latest_for returns nil when event is unknown" do
     es = EventEngine::EventSchema.new
     assert_nil es.latest_for(:missing)
+  end
+
+  test "schema_for resolves within the requested domain" do
+    es = EventEngine::EventSchema.new
+    sales = build_schema(event_name: :deal_won, version: 1, domain: :sales)
+    marketing = build_schema(event_name: :deal_won, version: 1, domain: :marketing)
+    es.register(sales)
+    es.register(marketing)
+
+    assert_equal sales, es.schema_for(:deal_won, 1, domain: :sales)
   end
 end

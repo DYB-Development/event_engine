@@ -62,9 +62,10 @@ module EventEngine
     #
     # @param event_name [Symbol]
     # @param version [Integer]
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [EventDefinition::Schema, nil]
-    def schema_for(event_name, version)
-      set = version_sets_for(event_name).find { |versions| versions.key?(version) }
+    def schema_for(event_name, version, domain: nil)
+      set = version_sets_for(event_name, domain).find { |versions| versions.key?(version) }
       set && set[version]
     end
 
@@ -101,8 +102,10 @@ module EventEngine
       [domain, event_name]
     end
 
-    def version_sets_for(event_name)
-      @schemas_by_event.select { |(_domain, name), _versions| name == event_name }.values
+    def version_sets_for(event_name, domain = nil)
+      @schemas_by_event.select do |(schema_domain, name), _versions|
+        name == event_name && (domain.nil? || schema_domain == domain)
+      end.values
     end
   end
 end
