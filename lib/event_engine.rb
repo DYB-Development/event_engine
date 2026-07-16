@@ -30,14 +30,15 @@ require "event_engine/the_local"
 #
 # Events are defined via a Ruby DSL and compiled into a canonical schema file.
 # The dump also generates a committed helpers file with one real +def+ per
-# event (e.g. +EventEngine.cow_fed(cow: cow)+) that delegates to {emit}, the
-# single path that validates inputs, builds an +Event+, and dispatches it to
+# event, namespaced under a per-domain module (e.g.
+# +EventEngine::Sales.cow_fed(cow: cow)+) that delegates to {emit}, the single
+# path that validates inputs, builds an +Event+, and dispatches it to
 # registered handlers. Companion gems (e.g. event_engine-delivery) register
 # handlers to process the events.
 #
 # @example Define, build, and dispatch an event
 #   EventEngine.register_handler(MyHandler, process_types: :all)
-#   EventEngine.cow_fed(cow: cow, occurred_at: Time.current)
+#   EventEngine::Sales.cow_fed(cow: cow, occurred_at: Time.current)
 module EventEngine
   class << self
     # Returns the current configuration instance.
@@ -68,10 +69,10 @@ module EventEngine
 
     attr_writer :schema_registry
 
-    def emit(event_name, inputs:, event_version: nil, occurred_at: nil,
+    def emit(event_name, inputs:, domain: nil, event_version: nil, occurred_at: nil,
              metadata: nil, idempotency_key: nil, aggregate_type: nil,
              aggregate_id: nil, aggregate_version: nil)
-      schema = schema_registry.schema(event_name, version: event_version)
+      schema = schema_registry.schema(event_name, version: event_version, domain: domain)
 
       attrs = EventBuilder.build(schema: schema, data: inputs)
       attrs[:occurred_at] = occurred_at || Time.current

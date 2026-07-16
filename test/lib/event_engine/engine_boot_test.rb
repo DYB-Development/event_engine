@@ -12,6 +12,7 @@ class EngineBootTest < ActiveSupport::TestCase
           event_name: :cow_fed,
           event_version: 1,
           event_type: :domain,
+          domain: :sales,
           required_inputs: [:cow],
           optional_inputs: [],
           payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
@@ -34,7 +35,7 @@ class EngineBootTest < ActiveSupport::TestCase
 
       EventEngine::Engine.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)
 
-      event = EventEngine.cow_fed(cow: OpenStruct.new(weight: 500))
+      event = EventEngine::Sales.cow_fed(cow: OpenStruct.new(weight: 500))
       assert_equal 500, event.payload[:weight]
     end
   ensure

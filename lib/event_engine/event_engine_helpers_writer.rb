@@ -13,28 +13,45 @@ module EventEngine
     ENVELOPE_KEYS = DslCompiler::RESERVED_INPUT_NAMES
 
     def self.write(path, event_schema)
-      event_names = event_schema.events.sort
-
       File.open(path, "w") do |io|
         io.write(HEADER)
         io.write("module EventEngine\n")
-        io.write("  class << self\n")
 
-        event_names.each do |event_name|
-          write_helper(io, event_schema.latest_for(event_name))
+        events_by_domain(event_schema).each do |domain, event_names|
+          write_domain_module(io, event_schema, domain, event_names)
         end
 
-        io.write("  end\n")
         io.write("end\n")
       end
     end
 
-    def self.write_helper(io, schema)
+    def self.events_by_domain(event_schema)
+      event_schema.schemas_by_event.keys
+        .group_by { |(domain, _event_name)| domain }
+        .transform_values { |pairs| pairs.map { |(_domain, event_name)| event_name }.sort }
+    end
+
+    def self.write_domain_module(io, event_schema, domain, event_names)
+      io.write("  module #{module_name(domain)}\n")
+
+      event_names.each do |event_name|
+        write_helper(io, domain, event_schema.latest_for(event_name, domain: domain))
+      end
+
+      io.write("  end\n")
+    end
+
+    def self.module_name(domain)
+      domain.to_s.camelize
+    end
+
+    def self.write_helper(io, domain, schema)
       inputs = schema.required_inputs + schema.optional_inputs
 
-      io.write("    def #{schema.event_name}(#{signature(schema)})\n")
-      io.write("      emit(\n")
+      io.write("    def self.#{schema.event_name}(#{signature(schema)})\n")
+      io.write("      EventEngine.emit(\n")
       io.write("        #{schema.event_name.inspect},\n")
+      io.write("        domain: #{domain.inspect},\n")
       io.write("        inputs: #{inputs_hash(inputs)},\n")
       io.write(envelope_delegation)
       io.write("      )\n")
