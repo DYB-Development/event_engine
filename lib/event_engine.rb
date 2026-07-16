@@ -68,10 +68,10 @@ module EventEngine
 
     attr_writer :schema_registry
 
-    def emit(event_name, inputs:, event_version: nil, occurred_at: nil,
+    def emit(event_name, inputs:, domain: nil, event_version: nil, occurred_at: nil,
              metadata: nil, idempotency_key: nil, aggregate_type: nil,
              aggregate_id: nil, aggregate_version: nil)
-      schema = schema_registry.schema(event_name, version: event_version)
+      schema = schema_registry.schema(event_name, version: event_version, domain: domain)
 
       attrs = EventBuilder.build(schema: schema, data: inputs)
       attrs[:occurred_at] = occurred_at || Time.current
