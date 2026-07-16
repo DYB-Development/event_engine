@@ -38,9 +38,10 @@ module EventEngine
     # Returns all version numbers for a given event.
     #
     # @param event_name [Symbol]
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [Array<Integer>] sorted version numbers
-    def versions_for(event_name)
-      @event_schema.versions_for(event_name)
+    def versions_for(event_name, domain: nil)
+      @event_schema.versions_for(event_name, domain: domain)
     end
 
     # Populates the registry from a loaded EventSchema. Can only be called once.
@@ -94,9 +95,10 @@ module EventEngine
     # Returns the latest schema version for an event.
     #
     # @param event_name [Symbol]
+    # @param domain [Symbol, nil] restricts resolution to a single domain
     # @return [EventDefinition::Schema, nil]
-    def latest_for(event_name)
-      @event_schema.latest_for(event_name)
+    def latest_for(event_name, domain: nil)
+      @event_schema.latest_for(event_name, domain: domain)
     end
 
     # Returns the underlying EventSchema store.

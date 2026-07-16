@@ -28,4 +28,13 @@ class EventRegistryDomainScopedLookupTest < ActiveSupport::TestCase
     schema = @registry.schema(:cow_fed, domain: :marketing)
     assert_equal :marketing, schema.domain
   end
+
+  test "scopes the lookup when the backing store is itself a registry" do
+    nested = EventEngine::SchemaRegistry.new
+    nested.reset!
+    nested.load_from_schema!(@registry)
+
+    schema = nested.schema(:cow_fed, domain: :marketing)
+    assert_equal :marketing, schema.domain
+  end
 end
