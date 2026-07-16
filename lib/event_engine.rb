@@ -147,6 +147,11 @@ module EventEngine
       event_schema
     end
 
+    def register_slice!(schema_path:)
+      slice = EventSchemaJsonLoader.load(schema_path)
+      schema_registry.load_from_schema!(slice.event_schema)
+    end
+
     # Compiles event definitions from source into a registry.
     # Used by rake tasks for schema drift detection.
     #
