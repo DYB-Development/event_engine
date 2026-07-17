@@ -9,4 +9,8 @@ class GemspecTest < ActiveSupport::TestCase
   test "does not depend on the rails meta-gem" do
     refute_includes dependency_names, "rails"
   end
+
+  test "depends on railties for the Rails adapter" do
+    assert_includes dependency_names, "railties"
+  end
 end

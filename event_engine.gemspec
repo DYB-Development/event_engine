@@ -17,6 +17,8 @@ Gem::Specification.new do |spec|
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["rubygems_mfa_required"] = "true"
 
+  spec.add_dependency "railties", ">= 7.1.6", "< 9"
+
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = repo_url
   spec.metadata["changelog_uri"] = "#{repo_url}/blob/main/CHANGELOG.md"
