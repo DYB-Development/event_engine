@@ -8,6 +8,18 @@ class DefinitionLoaderTest < ActiveSupport::TestCase
            "Expected at least one EventDefinition to be loaded"
   end
 
+  test "eager loads definitions through an injectable loader instead of Rails.application" do
+    called = false
+    EventEngine::DefinitionLoader.reset!
+    EventEngine::DefinitionLoader.loader = -> { called = true }
+
+    EventEngine::DefinitionLoader.ensure_loaded!
+
+    assert called
+  ensure
+    EventEngine::DefinitionLoader.reset!
+  end
+
   test "ensure_loaded! materializes lifecycle families into descendants" do
     Class.new(EventEngine::LifecycleDefinition) do
       subject :loader_demo
