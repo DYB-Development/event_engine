@@ -7,6 +7,8 @@ gemspec
 gem "the_local"
 
 group :development, :test do
+  # The dummy app under test/dummy boots a full Rails app
+  gem "rails", ">= 7.1.6", "< 9"
   # Needed for the dummy app database
   gem "sqlite3"
   gem "sprockets-rails"
