@@ -35,6 +35,18 @@ module EventEngine
       EventEngine.reset_handlers!
     end
 
+    test "emit hands the built event to the configured resolver" do
+      received = []
+      previous_resolver = EventEngine.configuration.resolver
+      EventEngine.configuration.resolver = ->(event) { received << event }
+
+      EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
+
+      assert_equal 1, received.size
+    ensure
+      EventEngine.configuration.resolver = previous_resolver
+    end
+
     test "emit builds the payload from the given inputs" do
       cow = OpenStruct.new(weight: 500)
 

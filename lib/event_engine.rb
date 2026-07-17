@@ -63,7 +63,9 @@ module EventEngine
       attrs[:subject] = schema.subject
       attrs[:domain] = schema.domain
 
-      dispatch(Event.new(**attrs))
+      event = Event.new(**attrs)
+      configuration.resolver.call(event)
+      dispatch(event)
     end
 
     def subject_registry
