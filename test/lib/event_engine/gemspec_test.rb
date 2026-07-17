@@ -13,4 +13,8 @@ class GemspecTest < ActiveSupport::TestCase
   test "depends on railties for the Rails adapter" do
     assert_includes dependency_names, "railties"
   end
+
+  test "depends on activesupport for the core conveniences it uses" do
+    assert_includes dependency_names, "activesupport"
+  end
 end

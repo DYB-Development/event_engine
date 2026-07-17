@@ -18,6 +18,7 @@ Gem::Specification.new do |spec|
   spec.metadata["rubygems_mfa_required"] = "true"
 
   spec.add_dependency "railties", ">= 7.1.6", "< 9"
+  spec.add_dependency "activesupport", ">= 7.1.6", "< 9"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = repo_url
