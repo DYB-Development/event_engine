@@ -129,15 +129,6 @@ module EventEngine
       schema_registry
     end
 
-    def compiled_schema_registry
-      DefinitionLoader.ensure_loaded!
-      definitions = EventDefinition.descendants
-      compiled = DslCompiler.compile(definitions)
-      registry = SchemaRegistry.new
-      registry.load_from_schema!(compiled)
-      registry
-    end
-
     def file_schema_registry(schema_path: configuration.schema_path)
       loaded = EventSchemaJsonLoader.load(schema_path)
       registry = SchemaRegistry.new
