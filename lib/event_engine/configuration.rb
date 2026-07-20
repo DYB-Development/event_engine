@@ -6,9 +6,12 @@ module EventEngine
 
     attr_accessor :schema_path
 
+    attr_accessor :publisher_schema_paths
+
     def initialize
       @logger = defined?(Rails) ? Rails.logger : Logger.new($stdout)
       @schema_path = "db/event_schema.json"
+      @publisher_schema_paths = []
     end
   end
 end
