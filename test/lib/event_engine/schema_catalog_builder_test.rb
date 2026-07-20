@@ -34,4 +34,22 @@ class SchemaCatalogBuilderTest < ActiveSupport::TestCase
     pack.unlink
     catalog.unlink
   end
+
+  test "aggregates events from multiple packs into one catalog" do
+    cattle = write_source(build_schema(:cow_fed))
+    swine = write_source(build_schema(:pig_weighed))
+    catalog = Tempfile.new(["catalog", ".json"])
+
+    EventEngine::SchemaCatalogBuilder.build(
+      sources: [cattle.path, swine.path],
+      catalog_path: catalog.path
+    )
+
+    registry = EventEngine::EventSchemaJsonLoader.load(catalog.path)
+    assert_equal [:cow_fed, :pig_weighed], registry.events.sort
+  ensure
+    cattle.unlink
+    swine.unlink
+    catalog.unlink
+  end
 end
