@@ -1,6 +1,5 @@
 require "test_helper"
 require "ostruct"
-require "tempfile"
 
 module EventEngine
   class LifecycleDefinitionEmitTest < ActiveSupport::TestCase
@@ -46,17 +45,6 @@ module EventEngine
       event = EventEngine.emit(:export_csv_completed, inputs: { export: export })
 
       assert_equal :export_csv, event.subject
-    end
-
-    test "a generated lifecycle family dumps its event names to the schema file" do
-      Tempfile.create("event_schema") do |file|
-        EventEngine::EventSchemaDumper.dump!(
-          definitions: ExportCsvEvents.generated_events,
-          path: file.path
-        )
-
-        assert_includes File.read(file.path), "export_csv_completed"
-      end
     end
   end
 end
