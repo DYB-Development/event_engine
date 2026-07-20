@@ -52,4 +52,21 @@ class SchemaCatalogBuilderTest < ActiveSupport::TestCase
     swine.unlink
     catalog.unlink
   end
+
+  test "preserves the fingerprint read from source without recomputing it" do
+    planted = "planted-fingerprint-not-recomputed"
+    entry = build_schema(:cow_fed).to_h.merge(fingerprint: planted)
+    pack = Tempfile.new(["pack_schema", ".json"])
+    pack.write(JSON.pretty_generate([entry]))
+    pack.close
+    catalog = Tempfile.new(["catalog", ".json"])
+
+    EventEngine::SchemaCatalogBuilder.build(sources: [pack.path], catalog_path: catalog.path)
+
+    written = JSON.parse(File.read(catalog.path)).first
+    assert_equal planted, written["fingerprint"]
+  ensure
+    pack.unlink
+    catalog.unlink
+  end
 end
