@@ -6,8 +6,8 @@ Gem::Specification.new do |spec|
   spec.authors     = ["tylercschneider"]
   spec.email       = ["tylercschneider@gmail.com"]
   spec.homepage    = "https://eventengine.co"
-  spec.summary     = "Schema-first event definitions and dispatch for Rails"
-  spec.description = "The core of the EventEngine pipeline: define events with a Ruby DSL, compile to a canonical schema, and dispatch built events to registered handlers by level. Durable delivery, transports, the outbox, and the observability dashboard live in the companion gem event_engine-delivery."
+  spec.summary     = "The Rails host runtime for the schema-first EventEngine pipeline"
+  spec.description = "The runtime of the EventEngine pipeline: load the committed schema catalog aggregated from domain packs, build validated events, and dispatch them to registered handlers by process_type. Events are declared with event_engine-event_definition; durable delivery, transports, and the dashboard live in event_engine-delivery."
   spec.license     = "MIT"
 
   spec.required_ruby_version = ">= 3.2.0"

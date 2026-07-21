@@ -1,57 +1,92 @@
 # EventEngine
 
-EventEngine is the schema-first **core** of an event pipeline for Rails:
+The **Rails host runtime** of the [EventEngine](https://github.com/DYB-Development) pipeline.
 
-- **Define** events with a small Ruby DSL.
-- **Compile** them into a canonical, committed schema file (`db/event_schema.rb`).
-- **Emit** them through generated helpers (`EventEngine.cow_fed(...)`) that build a
-  validated `Event` and **dispatch** it to registered handlers by *level*.
+EventEngine is a schema-first event pipeline. Domain events are **declared** and
+**compiled** into a committed contract by domain-pack gems (built on
+[`event_engine-event_definition`](https://github.com/DYB-Development/event_engine-event_definition)).
+This gem is the **runtime** a Rails app installs: it holds the schema registry,
+**builds** a validated `EventEngine::Event` from the inputs a pack hands it, and
+**dispatches** each event to the handlers that are registered.
 
-The core gem does **not** deliver events anywhere on its own. It builds the event
-and hands it to whatever handlers are registered. Durable delivery and durable
-storage live in companion gems that register themselves as handlers:
+This gem does **not** author events (that is `event_engine-event_definition` + your
+domain packs) and does **not** deliver them (that is the handler gems below). It is
+the middle of the pipe: inputs in, built event out, fanned to handlers.
+
+> **Status.** The authoring layer has been fully extracted out of this gem. The
+> *passive* wiring that makes packs work with **no per-pack host config** — the
+> publisher adapter and pack self-registration described in
+> [How it fits together](#how-it-fits-together) — is the intended end state but is
+> **not wired yet**. Until it lands, drive the runtime directly with
+> [`EventEngine.emit`](#emitting-events). See [Not wired yet (TBD)](#not-wired-yet-tbd).
+
+---
+
+## Where this gem sits
 
 | Gem | Responsibility | Add it when |
 |---|---|---|
-| **`event_engine`** (this gem) | Define, compile, emit, dispatch | Always — it's the core |
-| [`event_engine-delivery`](https://github.com/DYB-Development/event_engine-delivery) | Transactional outbox, retries, dead-letters, transports (Kafka), dashboard, cloud reporter | You need to deliver events reliably (in-process or to a broker) |
-| [`event_engine-store`](https://github.com/DYB-Development/event_engine-store) | Durable, append-only event log + event-sourcing replay & projections | You need a permanent record of every event / event sourcing |
+| [`event_engine-event_definition`](https://github.com/DYB-Development/event_engine-event_definition) | The DSL, schema value objects, and the build step that turns definitions into a committed helper file + `schema.json`. No Rails. | A gem or app **declares** events |
+| **`event_engine`** (this gem) | Registry, build a validated event, dispatch to handlers by `process_type` | Always — it's the host runtime |
+| `event_engine-delivery` | Transactional outbox, retries, dead-letters, transports (Kafka), dashboard | You need durable/broker delivery |
+| `event_engine-store` | Durable append-only event log + replay & projections | You need a permanent record / event sourcing |
+| `event_engine-subscribers`, `-telemetry`, `-sourced` | Handler gems for inline/background subscribers, telemetry, and event sourcing | You want that processing style |
 
-You can run the core gem **by itself** with your own handlers — see
-[The handler extension point](#the-handler-extension-point).
-
-> This README documents the core gem **only**. Outbox, transports, dead-letters,
-> the dashboard, and the cloud reporter are documented in `event_engine-delivery`.
-> The event log, replay, and projections are documented in `event_engine-store`.
-
----
-
-## Table of contents
-
-- [Quick start](#quick-start)
-- [Mental model](#mental-model)
-- [Defining events](#defining-events)
-  - [The DSL reference](#the-dsl-reference)
-  - [How payload fields are extracted](#how-payload-fields-are-extracted)
-  - [There is no `type:` casting](#there-is-no-type-casting)
-  - [Lifecycle event families](#lifecycle-event-families)
-- [Generating the schema](#generating-the-schema)
-  - [How versioning works](#how-versioning-works)
-  - [Drift checking in CI](#drift-checking-in-ci)
-- [Emitting events](#emitting-events)
-- [Subscribers](#subscribers)
-- [Event levels](#event-levels)
-- [The handler extension point](#the-handler-extension-point)
-- [Configuration](#configuration)
-- [Rake tasks](#rake-tasks)
-- [Installation generator](#installation-generator)
-- [For AI assistants](#for-ai-assistants)
-- [Contributing](#contributing)
-- [License](#license)
+Domain packs (e.g. `event_engine-marketing_events`, `-sales_events`, `-user_events`)
+declare events against `event_engine-event_definition` and each ships its own
+committed `schema.json` and helper module.
 
 ---
 
-## Quick start
+## How it fits together
+
+A pack's generated helper does **not** emit. It forwards the raw inputs through a
+**publisher port**; this gem is what turns those inputs into a real event and
+dispatches it.
+
+```
+pack helper  (event_engine-event_definition)
+    MarketingEvents.lead_created(lead: lead, …envelope)
+          │  calls the publisher PORT (not emit):
+          ▼
+    EventEngine::Definition.publisher.publish(:lead_created, domain: :marketing,
+                                               inputs: { lead: lead }, …envelope)
+          │  default publisher raises until one is wired
+          ▼
+    event_engine's publisher adapter          ◄── TBD: event_engine assigns itself here
+          │  EventEngine.emit(:lead_created, inputs: { lead: lead }, domain: :marketing, …)
+          ▼
+    EventBuilder builds the payload from each field's from:/attr:  ◄── schema from the registry
+          │  EventEngine.dispatch(event)
+          ▼
+    handlers whose process_types match event.process_type
+          (event_engine-delivery / -store / -subscribers / your own)
+```
+
+**`EventEngine.emit` is the official emit, and it lives here** — not in the pack. The
+pack passes *inputs* (the whole objects you already have); this gem reads them via
+the schema's `from:`/`attr:` mapping to build the flat `payload`, stamps the
+envelope, and dispatches.
+
+### The intended passive wiring (TBD)
+
+The goal is that a host installs the gems and configures **nothing per pack**. Two
+halves self-wire at boot:
+
+1. **Emit routing** — `event_engine` registers itself as
+   `EventEngine::Definition.publisher`, so every pack's helper routes into
+   `EventEngine.emit` automatically. **TBD** — today the default publisher raises
+   `PublisherNotConfigured`.
+2. **Schema loading** — each pack's Rails engine calls
+   `EventEngine.register_slice!(schema_path: Pack.schema_path)` at boot, so its
+   events are resolvable in the registry. `register_slice!` exists and is additive;
+   **packs doing this is TBD** (and the packs aren't set up yet).
+
+---
+
+## Using it today
+
+Until the passive halves land, drive the runtime directly.
 
 ```ruby
 # Gemfile
@@ -62,540 +97,181 @@ gem "event_engine"
 bundle install
 ```
 
-1. **Define an event** in `app/event_definitions/cow_fed.rb` (see [Defining events](#defining-events)).
-2. **Dump the schema**:
-   ```bash
-   bin/rails event_engine:schema:dump
-   ```
-3. **Commit `db/event_schema.json`** — it is authoritative at runtime. (The dump
-   also writes `db/event_schema.rb`, a human-readable convenience; commit it too.)
-4. **Register at least one handler** so emitted events do something. Either add a
-   companion gem (`event_engine-delivery` / `event_engine-store`) or write your own
-   (see [The handler extension point](#the-handler-extension-point)).
-5. **Emit** from your app code:
-   ```ruby
-   EventEngine.cow_fed(cow: cow)
-   ```
+### 1. Get the schema into the registry
 
-> With **no** handler registered, the core gem builds and dispatches the event but
-> nothing observes it. That's expected — core is the dispatch layer; handlers are
-> what *do* something with events.
+At boot the engine loads a committed **`db/event_schema.json`** and reconstructs the
+registry from it (no Ruby is evaluated from a schema file; missing in production
+raises). Put the schema there by either:
 
----
+- committing `db/event_schema.json` directly, or
+- registering a pack's slice at boot (additive — each slice merges in):
 
-## Mental model
-
-```
-EventDefinition (Ruby DSL)
-        │  bin/rails event_engine:schema:dump
-        ▼
-db/event_schema.json ◄── authoritative at runtime; commit it
-        │  (db/event_schema.rb is also written as a readable convenience)
-        │  Rails boot (Engine initializer)
-        ▼
-SchemaRegistry  ──► installs EventEngine.<event_name> helpers
-        │  you call EventEngine.cow_fed(cow: cow)
-        ▼
-EventBuilder builds a validated EventEngine::Event
-        │  EventEngine.dispatch(event)
-        ▼
-HandlerRegistry ──► every registered handler whose `levels:` match event_level
-                     (event_engine-delivery, event_engine-store, or your own)
-```
-
-Two things are worth internalizing:
-
-1. **The committed schema file — not your definition classes — is the source of
-   truth at runtime.** The engine loads `db/event_schema.json` at boot (no Ruby is
-   evaluated from a schema file). Definition classes are read only at *dump* time.
-   In production a missing `db/event_schema.json` raises at boot.
-2. **Emitting and handling are decoupled.** `EventEngine.dispatch` just fans the
-   event out to handlers by level. The core gem ships *no* handlers.
-
----
-
-## Defining events
-
-Put definitions where Rails eager-loads them — conventionally
-`app/event_definitions/`. Subclass `EventEngine::EventDefinition`:
-
-```ruby
-# app/event_definitions/cow_fed.rb
-class CowFed < EventEngine::EventDefinition
-  input :cow                 # required input to the emit helper
-  optional_input :farmer     # optional input
-
-  event_name :cow_fed        # the event's identity → EventEngine.cow_fed
-  event_type :domain         # free-form classification (:domain, :integration, …)
-  event_level 3              # how it's dispatched (optional; see Event levels)
-
-  required_payload :weight,      from: :cow,    attr: :weight
-  optional_payload :farmer_name, from: :farmer, attr: :name
-end
-```
-
-### The DSL reference
-
-All methods below are **class-level** macros on an `EventDefinition` subclass.
-
-| Macro | Signature | What it does |
-|---|---|---|
-| `event_name` | `event_name(:symbol)` | The event's identity. Becomes the `EventEngine.<name>` helper. **Required.** |
-| `event_type` | `event_type(:symbol)` | Free-form classification, e.g. `:domain`, `:integration`, `:system`. **Required.** |
-| `event_level` | `event_level(Integer)` | Dispatch level `1..4` (see [Event levels](#event-levels)). Optional. |
-| `input` | `input(:name)` | Declares a **required** input keyword the emit helper accepts. Duplicate names raise `ArgumentError`. |
-| `optional_input` | `optional_input(:name)` | Declares an **optional** input keyword. |
-| `required_payload` | `required_payload(name, from:, attr: nil)` | A payload field that must be present. `from:` names the input it reads; `attr:` is the method called on that input. |
-| `optional_payload` | `optional_payload(name, from:, attr: nil)` | Same, but **omitted from the payload** when the source input is `nil`. |
-
-A handful of payload field names are **reserved** (they collide with event
-envelope/outbox columns) and rejected at dump time:
-
-```
-event_name event_type event_version occurred_at created_at updated_at
-published_at metadata idempotency_key attempts dead_lettered_at
-aggregate_type aggregate_id aggregate_version
-```
-
-### How payload fields are extracted
-
-When you emit, `EventBuilder` walks each declared payload field and pulls a value
-out of the inputs you passed:
-
-- `from:` selects **which input** to read.
-- `attr:` is the **method called on that input**. If `attr:` is `nil`, the input
-  itself is used (passthrough).
-- For an `optional_payload`, if the `from:` input is `nil` the field is simply left
-  out of the payload (no key, not a `nil` value).
-
-```ruby
-required_payload :weight, from: :cow, attr: :weight
-# → payload[:weight] = cow.weight
-
-optional_payload :raw_cow, from: :cow
-# → payload[:raw_cow] = cow            (passthrough; attr omitted)
-
-optional_payload :farmer_name, from: :farmer, attr: :name
-# → only present if `farmer:` was passed and non-nil
-```
-
-The resulting `event.payload` is a **symbol-keyed Hash**.
-
-### There is no `type:` casting
-
-The complete payload DSL is `required_payload` / `optional_payload` with `from:` and
-`attr:` only — there is no `type:` option and no type casting, and no
-`entity_class` / `entity_id` / `entity_version` macros.
-
-Whatever value `attr:` returns is stored as-is. If you need a value coerced to a
-specific type, do it on the source object's method (e.g. have `cow.weight` return a
-`Float`) or expose a purpose-built reader and point `attr:` at it.
-
-### Lifecycle event families
-
-Related events that describe one capability — `export_csv_started`,
-`export_csv_completed`, `export_csv_failed` — share inputs and payload fields. Writing
-them as three independent `EventDefinition`s lets their names and shared fields drift.
-Subclass `EventEngine::LifecycleDefinition` to stamp the whole family from one template:
-
-```ruby
-# app/event_definitions/export_csv_events.rb
-class ExportCsvEvents < EventEngine::LifecycleDefinition
-  subject :export_csv                      # validated against the SubjectRegistry
-  event_type :product
-
-  input :export
-  required_payload :format, from: :export, attr: :format
-
-  lifecycle :started, :completed, :failed  # → export_csv_started / _completed / _failed
-
-  on :failed do
-    input :error
-    required_payload :error_class, from: :error, attr: :class
+  ```ruby
+  # in a pack's Rails engine
+  initializer "marketing_events.register_events" do
+    config.after_initialize do
+      EventEngine.register_slice!(schema_path: MarketingEvents.schema_path)
+    end
   end
-end
-```
+  ```
 
-This generates three real `EventDefinition`s named `subject_verb` (flat snake_case, so
-each yields a working `EventEngine.export_csv_completed(...)` helper). Shared declarations
-apply to every verb; an `on :verb` block layers additional inputs/payloads onto that verb
-only. The generated events behave exactly like hand-written ones everywhere — schema dump,
-registry, helpers, metadata enricher, catalog, and compatibility checks all apply unchanged.
+### 2. Register a handler
 
-| Macro | Signature | What it does |
-|---|---|---|
-| `subject` | `subject(:symbol)` | The family's subject, carried onto every generated event. Must be registered. |
-| `event_type` | `event_type(:symbol)` | Shared across every verb. |
-| `process_type` | `process_type(:symbol)` | Shared across every verb. Optional. |
-| `lifecycle` | `lifecycle(*verbs)` | Generates one event per verb, named `:"#{subject}_#{verb}"`. |
-| `on` | `on(:verb) { … }` | Layers verb-specific `input` / `required_payload` / `optional_payload` onto that verb only. Add-only. |
-
-Shared `input` / `optional_input` / `required_payload` / `optional_payload` are declared
-exactly as on a plain `EventDefinition` and apply to every verb.
-
----
-
-## Generating the schema
-
-After adding or changing definitions:
-
-```bash
-bin/rails event_engine:schema:dump   # compile definitions → db/event_schema.rb
-```
-
-This compiles every `EventDefinition` subclass, merges with the existing committed
-file, and rewrites `db/event_schema.rb`. **Commit the result.** The generated file
-looks like:
+Add a handler gem (`event_engine-delivery`, `-store`, `-subscribers`, …) **or** your
+own — anything responding to `#call(event)`:
 
 ```ruby
-# This file is authoritative in production.
-# It is generated from EventDefinitions via:
-#
-#   bin/rails event_engine:schema:dump
-#
-# Do not edit manually.
-
-EventEngine::EventSchema.define do |schema|
-  schema.register(
-    EventEngine::EventDefinition::Schema.new(
-      event_name: :cow_fed,
-      event_version: 1,
-      event_type: :domain,
-      event_level: 3,
-      required_inputs: [:cow],
-      optional_inputs: [:farmer],
-      payload_fields: [
-        { name: :weight, required: true, from: :cow, attr: :weight }
-      ]
-    )
-  )
-end
-```
-
-### Neutral JSON artifact
-
-Alongside `db/event_schema.rb`, the dump writes `db/event_schema.json` — the same
-compiled schema as plain, versioned data that BI/data consumers can read **without
-running Ruby or evaluating the executable schema file**. This JSON artifact is
-**canonical at runtime**: the engine loads it at boot and reconstructs the registry
-from it, so no code is executed from a schema file. `db/event_schema.rb` is still
-generated and committed as a human-readable convenience, but it is no longer read at
-boot (a follow-up will retire it). **Commit both** files.
-
-It is a JSON array with one object per event **and version**, sorted by
-`event_name` then `event_version`, and re-dumping an unchanged schema produces
-byte-identical output:
-
-```json
-[
-  {
-    "event_name": "cow_fed",
-    "event_version": 1,
-    "event_type": "domain",
-    "process_type": "durable",
-    "subject": "feeding",
-    "domain": "sales",
-    "required_inputs": ["cow"],
-    "optional_inputs": ["farmer"],
-    "payload_fields": [
-      { "name": "weight", "from": "cow", "attr": "weight", "required": true }
-    ],
-    "fingerprint": "…"
-  }
-]
-```
-
-Each object carries the event's identity (`event_name`, `event_version`,
-`event_type`, `process_type`, `subject`, `domain`), its inputs
-(`required_inputs`, `optional_inputs`), its `payload_fields` (each with `name`,
-`from`, `attr`, `required`), and the `fingerprint` used for version bumping. This
-is documented plain JSON — not a formal JSON Schema.
-
-### Events from more than one gem
-
-A host app is not the only source of events. A separate gem — say
-`marketing_events` — can ship its **own** event definitions, compile them into its
-**own** committed `event_schema.json` and helpers, and contribute them to the host
-at boot without the host ever recompiling.
-
-Each such source is a **generator**. A generator compiles only the definitions it
-owns (the ones loaded in its own dump context) into its own committed artifacts:
-
-```ruby
-EventEngine::EventSchemaDumper.dump!(
-  definitions: EventEngine::EventDefinition.descendants,
-  path: MarketingEvents::Engine.root.join("db/event_schema.rb"),
-  json_path: MarketingEvents::Engine.root.join("db/event_schema.json"),
-  helpers_path: MarketingEvents::Engine.root.join("db/event_engine_helpers.rb")
+# config/initializers/event_engine.rb
+EventEngine.register_handler(
+  ->(event) { Rails.logger.info("[event] #{event.event_name} #{event.payload.inspect}") },
+  process_types: :all
 )
 ```
 
-At boot the generator self-registers its committed slice into the shared registry
-from its own railtie, and loads its own helpers:
+With no handler, the event is still built and dispatched — just to no one.
+
+### 3. Emit
 
 ```ruby
-module MarketingEvents
-  class Engine < ::Rails::Engine
-    initializer "marketing_events.register_events" do
-      config.after_initialize do
-        EventEngine.register_slice!(
-          schema_path: MarketingEvents::Engine.root.join("db/event_schema.json")
-        )
-        load MarketingEvents::Engine.root.join("db/event_engine_helpers.rb")
-      end
-    end
-  end
-end
+EventEngine.emit(:cow_fed, inputs: { cow: cow }, domain: :sales)
 ```
-
-`register_slice!` is **additive**: each generator's slice merges into the shared
-registry without evicting the others and without needing any other generator's
-definitions to be loaded. Every event — host's and gems' alike — is then emittable
-in the same host app.
-
-### How versioning works
-
-The dumper is **append-only and additive** — it never edits an existing version in
-place:
-
-- A brand-new event is written as **version 1**.
-- When you change an existing event, the merger compares a **SHA256 fingerprint**
-  of its `event_name`, `event_type`, inputs, and payload fields against the latest
-  version in the file. If they differ, it writes a **new version** (`N + 1`); if
-  they match, nothing changes.
-- Version numbers are **monotonic** — reverting a change to a previous shape still
-  produces a *new* higher version, never reuses an old number.
-
-> **`event_level` is intentionally excluded from the fingerprint.** Changing only an
-> event's level does **not** bump its version — level is treated as operational
-> routing metadata, not part of the event contract. This is what lets you "promote"
-> an event up the level ladder as a one-line change with no schema churn.
-
-### Drift checking in CI
-
-```bash
-bin/rails event_engine:schema:verify
-```
-
-This fails if your definitions have drifted from the committed `db/event_schema.rb`
-(i.e. someone changed a definition but forgot to dump), printing a readable diff of
-what changed. Add it to CI to keep the file honest. The older `event_engine:schema`
-and `event_engine:schema_check` tasks perform the same check without the diff.
 
 ---
 
 ## Emitting events
 
-At boot the engine loads `db/event_schema.json` and installs a singleton helper on
-`EventEngine` for each event. Pass declared inputs by keyword, plus optional
-emit-time envelope fields:
+`EventEngine.emit` is the always-available entry point (and the target the publisher
+adapter will forward to). It looks the event up in the registry, builds its payload
+from the inputs, stamps the envelope, dispatches, and returns the built
+`EventEngine::Event`.
 
 ```ruby
-EventEngine.cow_fed(
-  cow: cow,                        # declared inputs, by name
-  farmer: farmer,
+event = EventEngine.emit(
+  :cow_fed,
+  inputs: { cow: cow, farmer: farmer },  # the declared inputs, by name
 
-  occurred_at: Time.current,       # optional; defaults to Time.current
-  metadata: { request_id: "abc" }, # optional contextual hash
-  idempotency_key: "cow-#{cow.id}-#{Date.current}", # optional; defaults to a UUID
-  aggregate_type: "Cow",           # optional aggregate tracking
+  domain: :sales,                        # scopes lookup when a name exists in >1 domain
+  event_version: 2,                      # optional; defaults to the latest version
+  occurred_at: Time.current,             # optional; defaults to Time.current
+  metadata: { source: "import" },        # optional; merged over metadata_defaults
+  idempotency_key: "cow-#{cow.id}",      # optional; defaults to a UUID
+  aggregate_type: "Cow",                 # optional aggregate envelope fields
   aggregate_id: cow.id,
-  aggregate_version: 1
+  aggregate_version: 3
 )
+
+event.payload        # => { weight: 500 }   (symbol-keyed, built from inputs)
+event.process_type   # => :durable          (from the schema)
 ```
 
-- Missing a required input, or passing an unknown input, raises `ArgumentError`.
-- `event_version:` may be passed to pin a specific schema version (defaults to latest).
-- The return value is **whatever the handlers return** — there's no canonical return
-  in core. (`event_engine-delivery`, for example, returns the persisted outbox record
-  for levels 3+.)
+Input validation (missing required input, unknown input) raises `ArgumentError` at
+build time.
 
-The built `EventEngine::Event` exposes: `event_name`, `event_type`, `event_version`,
-`event_level`, `payload` (symbol-keyed), `metadata`, `occurred_at`,
-`idempotency_key`, `aggregate_type`, `aggregate_id`, `aggregate_version`.
+### Named helpers (`MarketingEvents.lead_created`)
+
+The ergonomic per-event helpers live in the **domain packs**, generated by
+`event_engine-event_definition`. This runtime does not generate them; at boot it will
+`load db/event_engine_helpers.rb` **if a pack has committed one**, but it never
+creates that file. Once the [publisher adapter](#the-intended-passive-wiring-tbd)
+is wired, calling a pack helper routes through `EventEngine.emit` for you; until then,
+call `EventEngine.emit` directly.
 
 ---
 
-## Subscribers
+## Dispatch and `process_type`
 
-A **subscriber** reacts to an event in-process. Subclass `EventEngine::Subscriber`,
-declare what it handles, and implement `handle`:
+`EventEngine.dispatch(event)` calls every registered handler whose `process_types`
+match the event's own `process_type` (or that registered with `:all`). The
+`process_type` is part of the committed schema, not chosen at emit time.
 
-```ruby
-# app/subscribers/send_welcome_email.rb
-class SendWelcomeEmail < EventEngine::Subscriber
-  subscribes_to :user_registered
+| `process_type` | Handled by (category) |
+|---|---|
+| `inline`, `background` | subscribers |
+| `durable`, `broker` | delivery |
+| `telemetry` | telemetry |
+| `sourced` | sourcing |
 
-  def handle(event)
-    # event.payload is symbol-keyed
-    UserMailer.welcome(event.payload[:user_id]).deliver_later
-  end
-end
-```
-
-- `subscribes_to(:event_name)` registers the subscriber at load time.
-- `handle(event)` is required; the base raises `NotImplementedError` otherwise.
-
-> **Who actually calls subscribers?** The core gem only *registers* subscribers in
-> `EventEngine::SubscriberRegistry` — it does not invoke them. Invocation is done by
-> a handler. `event_engine-delivery` invokes subscribers for levels 1–3 (see its
-> docs). If you run core standalone, your own handler decides when/whether to call
-> `EventEngine::SubscriberRegistry.subscribers_for(event.event_name)`.
-
-Keep subscribers **idempotent** — at levels 3+ they may be retried.
-
----
-
-## Event levels
-
-`event_level` is a hint that tells the *delivery* layer how hard to work to get an
-event where it's going. **Your producer code never changes when you move an event up
-a level — it's a one-line edit to the definition.**
-
-| Level | Durable? | Where it goes | Adopt when | Watch out for |
-|---|---|---|---|---|
-| **1 sync** | no | in-app subscribers, synchronously in the caller's stack | a cheap in-process reaction that must happen now | a slow/failing subscriber blocks the caller; nothing persists, so it's lost on a crash |
-| **2 job** | no | in-app subscribers, via a background job | the reaction can be deferred | still not durable; needs an ActiveJob backend; failures don't surface to the caller |
-| **3 outbox** | **yes** | in-app subscribers, when the outbox drains | the reaction must survive a crash and be atomic with your DB write | more moving parts; delivery is eventual |
-| **4 outbox + broker** | **yes** | **outside the app**, to a transport (Kafka, …) | an independent service consumes it on its own cycle | it's a cross-service contract — schema/version discipline matters; needs a real transport |
-
-Guiding principle: **adopt the lowest level that solves your real problem; move up
-only when the problem demands it.** Signals to move up:
-
-- A level-1 subscriber is slow / on the request hot path → **1 → 2**.
-- Work is lost across crashes/restarts/deploys → **2 → 3**.
-- An independent service must consume the event → **3 → 4**.
-
-> **The level table describes behavior implemented by `event_engine-delivery`.** The
-> core gem only stamps `event_level` onto the event and dispatches it. Levels 1–4
-> *mean* something only once a handler that interprets them is registered. Level 5
-> (event sourcing) is reserved but unsupported by the delivery layer.
-
-> **Caveat:** if you omit `event_level`, the event's level is `nil`. Handlers decide
-> how to treat `nil` — `event_engine-delivery`, for instance, routes `nil` through
-> its outbox path (the `else` branch). Set a level explicitly to be unambiguous.
-
----
-
-## The handler extension point
-
-This is the seam every companion gem (and you) plug into. A **handler** is any
-object that responds to `call(event)`. Register it with the levels it cares about:
+### Registering a handler
 
 ```ruby
-EventEngine.register_handler(handler, levels: :all)   # every event
-EventEngine.register_handler(handler, levels: 1..4)   # a Range
-EventEngine.register_handler(handler, levels: [1, 3]) # an explicit list
+EventEngine.register_handler(MyHandler.new, process_types: %i[durable broker])
+EventEngine.register_handler(->(event) { … }, process_types: :all)
 ```
 
-On `EventEngine.dispatch(event)`, every handler whose `levels:` include
-`event.event_level` (or `:all`) gets `call(event)`, in registration order.
-
-A minimal standalone handler — no companion gem required:
-
-```ruby
-# config/initializers/event_engine.rb
-class LogEverythingHandler
-  def call(event)
-    Rails.logger.info("[event] #{event.event_name} v#{event.event_version} #{event.payload.inspect}")
-    event
-  end
-end
-
-Rails.application.config.after_initialize do
-  EventEngine.register_handler(LogEverythingHandler.new, levels: :all)
-end
-```
-
-This is exactly how the companion gems hook in:
-
-- **`event_engine-delivery`** registers a handler at `levels: :all` that routes by
-  level (sync subscribers / background job / outbox / broker).
-- **`event_engine-store`** registers two handlers at `levels: :all` (a recorder and a
-  projection dispatcher).
-
-Other primitives on the `EventEngine` module:
-
-- `EventEngine.dispatch(event)` — fan an `Event` out to handlers (helpers call this).
-- `EventEngine.reset_handlers!` — clear all handlers (useful in tests, or to fully
-  take over routing).
-
-> Handlers run **in-process, in order, synchronously** within `dispatch`. If a
-> handler raises, later handlers don't run and the exception propagates to the
-> caller. Order matters: register `event_engine-store` before/after `delivery`
-> deliberately if both are present.
+`process_types:` is either `:all` or a list of `process_type` symbols. Companion gems
+register themselves this way from their own railties.
 
 ---
 
 ## Configuration
 
-The **core** gem's configuration is intentionally tiny — just a logger:
+Set via `EventEngine.configure { |config| … }`. All fields are optional.
 
-```ruby
-# config/initializers/event_engine.rb
-EventEngine.configure do |config|
-  config.logger = Rails.logger   # the only core option
-end
+| Field | Default | Accepts | What it does |
+|---|---|---|---|
+| `schema_path` | `"db/event_schema.json"` | String / path | The committed catalog the engine loads at boot, and the file the catalog task writes. |
+| `metadata_defaults` | `nil` | A callable (`-> { Hash }`) | Called on each emit; its hash is merged **under** any call-site `metadata:` (call-site wins). A raising callable is swallowed and logged, so emission never breaks. |
+| `logger` | `Rails.logger` | Any Logger | Where the engine logs (missing-schema warning, a raising `metadata_defaults`). |
+| `publisher_schema_paths` | `[]` | Array of paths | Inputs to the **optional** catalog-aggregation task only (see below). Not part of the runtime path. |
+
+---
+
+## The `Event`
+
+`EventEngine::Event` is a keyword-init `Struct`:
+
+```
+event_name  event_type  event_version  process_type  subject  domain
+payload  metadata  occurred_at  idempotency_key
+aggregate_type  aggregate_id  aggregate_version
 ```
 
-| Option | Default | Purpose |
-|---|---|---|
-| `logger` | `Rails.logger` (or `Logger.new($stdout)` outside Rails) | Where core logs |
-
-> Delivery options (`delivery_adapter`, `transport`, `batch_size`, …) belong to
-> `event_engine-delivery` and are set via `EventEngine::Delivery.configure` — see that
-> gem's README.
+`Event.from(record)` rebuilds one from any object exposing those readers (symbolizing
+the payload keys) — handy for handler gems reconstituting a persisted event.
 
 ---
 
 ## Rake tasks
 
-| Task | Purpose |
+| Task | What it does |
 |---|---|
-| `event_engine:schema:dump` | Compile definitions → `db/event_schema.rb` + `db/event_schema.json` (commit them) |
-| `event_engine:schema:verify` | Fail with a readable diff if definitions have drifted (use in CI) |
-| `event_engine:schema` | Same drift check, no diff |
-| `event_engine:schema_check` | Same drift check, no diff (alternate name) |
-
-(`event_engine-delivery` adds `dead_letters:*` and `outbox:cleanup` tasks.)
+| `event_engine:schema:catalog` | **Optional aggregation.** Concatenates every `schema.json` in `publisher_schema_paths` into one committed catalog at `schema_path` — useful as a single committed source or for BI/data consumers. Not required for the runtime. |
+| `event_engine:catalog` | Prints a Markdown catalog of the loaded events and their subjects. |
 
 ---
 
-## Installation generator
+## Not wired yet (TBD)
+
+Honest gaps in the current runtime:
+
+- **Publisher-adapter wiring.** `event_engine` does not yet register itself as
+  `EventEngine::Definition.publisher`, so a pack's generated helper does not route
+  through this runtime automatically — the default publisher raises. Until then, use
+  `EventEngine.emit` directly. (Deliberately out of scope of the authoring-removal
+  work.)
+- **Pack self-registration.** No pack ships an engine that `register_slice!`s its
+  schema at boot yet, and the packs themselves aren't set up. The primitive exists;
+  the convention doesn't.
+- **Boot still requires a committed `db/event_schema.json`.** The engine raises in
+  production if that file is missing — which is in tension with the fully-passive
+  goal (schema arriving only via `register_slice!`). Reconciling the two is part of
+  finishing the passive wiring.
+- **`the_local` guides.** The AI-assistant reference under
+  `lib/event_engine/reference/` and the `the_local` subagents still describe the old
+  in-gem DSL. They are generated provider docs (owned by `the_local-develop`) and
+  will be regenerated to match this runtime.
+
+---
+
+## Development
 
 ```bash
-bin/rails g event_engine:install
+bundle install
+bundle exec rake test        # Minitest, via the dummy app in test/dummy
 ```
-
-It creates `config/initializers/event_engine.rb`, a stub `db/event_schema.rb`, and
-installs Claude Code subagent files under `.claude/agents/` (see
-[For AI assistants](#for-ai-assistants)).
-
-The core gem itself ships no migrations. If you need the outbox or the event log,
-install the companion gem you need and run its migrations directly (see
-`event_engine-delivery` / `event_engine-store`).
-
----
-
-## For AI assistants
-
-A condensed, authoritative API reference ships inside the gem at
-`lib/event_engine/reference/guide.md` and is installed into consuming apps as Claude
-Code subagents (`.claude/agents/`). When working in a host app, prefer that
-reference and this README over reading gem internals.
-
----
-
-## Contributing
-
-1. Fork and create a feature branch.
-2. Add tests for behavior changes (Minitest; see `test/`).
-3. Run the suite: `bundle exec rake test`.
-4. Open a PR.
 
 ---
 
 ## License
 
-Available as open source under the terms of the
-[MIT License](https://opensource.org/licenses/MIT).
+Available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).

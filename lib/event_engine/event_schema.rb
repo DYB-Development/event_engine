@@ -2,12 +2,6 @@ module EventEngine
   class EventSchema
     class DuplicateEventNameError < StandardError; end
 
-    def self.define(&block)
-      schema = new
-      block.call(schema)
-      schema
-    end
-
     def initialize
       @schemas_by_event = {}
       @finalized = false
