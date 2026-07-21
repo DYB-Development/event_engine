@@ -63,5 +63,13 @@ module EventEngine
 
       assert_equal "cow-7", event.aggregate_id
     end
+
+    test "publish tells you how to rebuild the catalog when the event is not in it" do
+      error = assert_raises(DefinitionPublisher::EventNotInCatalogError) do
+        DefinitionPublisher.new.publish(:cow_moved, domain: :sales, inputs: {})
+      end
+
+      assert_includes error.message, "event_engine:schema:catalog"
+    end
   end
 end
