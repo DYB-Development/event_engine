@@ -5,6 +5,7 @@ require "event_engine/configuration"
 require "event_engine/process_type"
 require "event_engine/event_definition"
 require "event_engine/event_builder"
+require "event_engine/definition_publisher"
 require "event_engine/handler_registry"
 require "event_engine/event_schema"
 require "event_engine/schema_registry"
@@ -53,6 +54,16 @@ module EventEngine
       attrs[:domain] = schema.domain
 
       dispatch(Event.new(**attrs))
+    end
+
+    def register_definition_publisher!(port = definition_port)
+      return nil unless port.respond_to?(:publisher=)
+
+      port.publisher = DefinitionPublisher.new
+    end
+
+    def definition_port
+      ::EventEngine::Definition if defined?(::EventEngine::Definition)
     end
 
     def subject_registry

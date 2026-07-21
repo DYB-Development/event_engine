@@ -21,6 +21,8 @@ module EventEngine
       private
 
       def boot!(schema_path:, helpers_path:)
+        EventEngine.register_definition_publisher!
+
         EventEngine.boot_from_schema!(
           schema_path: schema_path,
           registry: EventEngine::SchemaRegistry.new
