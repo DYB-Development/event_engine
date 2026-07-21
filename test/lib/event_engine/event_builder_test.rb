@@ -3,19 +3,22 @@ require "ostruct"
 
 module EventEngine
   class EventBuilderTest < ActiveSupport::TestCase
-    class CowFed < EventDefinition
-      event_name :cow_fed
-      event_type :domain
-
-      input :cow
-      optional_input :farmer
-
-      required_payload :cow_weight, from: :cow, attr: :weight
-      optional_payload :farmer_name, from: :farmer, attr: :name
+    def cow_fed_schema
+      EventDefinition::Schema.new(
+        event_name: :cow_fed,
+        event_version: 1,
+        event_type: :domain,
+        required_inputs: [:cow],
+        optional_inputs: [:farmer],
+        payload_fields: [
+          { name: :cow_weight, required: true, from: :cow, attr: :weight },
+          { name: :farmer_name, required: false, from: :farmer, attr: :name }
+        ]
+      )
     end
 
     setup do
-      @schema = CowFed.schema
+      @schema = cow_fed_schema
     end
 
     test "builds payload from schema and data" do
@@ -33,8 +36,6 @@ module EventEngine
     end
 
     test "raises when required input is missing" do
-      cow = OpenStruct.new(weight: 500)
-
       error = assert_raises(ArgumentError) do
         EventBuilder.build(
           schema: @schema,
