@@ -14,7 +14,6 @@ require "event_engine/event_schema_json_loader"
 require "event_engine/event_schema_merger"
 require "event_engine/schema_catalog"
 require "event_engine/schema_catalog_builder"
-require "event_engine/railtie"
 require "event_engine/the_local"
 
 module EventEngine
