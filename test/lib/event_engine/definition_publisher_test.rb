@@ -41,5 +41,16 @@ module EventEngine
 
       assert_equal({ weight: 500 }, event.payload)
     end
+
+    test "publish carries the idempotency_key envelope key onto the built event" do
+      event = DefinitionPublisher.new.publish(
+        :cow_fed,
+        domain: :sales,
+        inputs: { cow: OpenStruct.new(weight: 500) },
+        idempotency_key: "cow-fed-7"
+      )
+
+      assert_equal "cow-fed-7", event.idempotency_key
+    end
   end
 end
