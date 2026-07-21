@@ -52,5 +52,16 @@ module EventEngine
 
       assert_equal "cow-fed-7", event.idempotency_key
     end
+
+    test "publish carries the aggregate identifiers onto the built event" do
+      event = DefinitionPublisher.new.publish(
+        :cow_fed,
+        domain: :sales,
+        inputs: { cow: OpenStruct.new(weight: 500) },
+        aggregate_id: "cow-7"
+      )
+
+      assert_equal "cow-7", event.aggregate_id
+    end
   end
 end
