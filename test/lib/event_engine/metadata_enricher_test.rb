@@ -3,26 +3,22 @@ require "ostruct"
 
 module EventEngine
   class MetadataEnricherTest < ActiveSupport::TestCase
-    class CowFed < EventDefinition
-      event_name :cow_fed
-      event_type :domain
-
-      input :cow
-      required_payload :weight, from: :cow, attr: :weight
+    def cow_fed_schema
+      EventDefinition::Schema.new(
+        event_name: :cow_fed,
+        event_version: 1,
+        event_type: :domain,
+        required_inputs: [:cow],
+        optional_inputs: [],
+        payload_fields: [{ name: :weight, required: true, from: :cow, attr: :weight }]
+      )
     end
 
     setup do
       @previous_registry = EventEngine.schema_registry
 
-      compiled = DslCompiler.compile([CowFed])
-      compiled.finalize!
-
       event_schema = EventSchema.new
-      compiled.events.each do |event|
-        schema = compiled.latest_for(event).dup
-        schema.event_version = 1
-        event_schema.register(schema)
-      end
+      event_schema.register(cow_fed_schema)
       event_schema.finalize!
 
       registry = SchemaRegistry.new
