@@ -56,8 +56,14 @@ module EventEngine
       dispatch(Event.new(**attrs))
     end
 
-    def register_definition_publisher!(port)
+    def register_definition_publisher!(port = definition_port)
+      return nil unless port.respond_to?(:publisher=)
+
       port.publisher = DefinitionPublisher.new
+    end
+
+    def definition_port
+      ::EventEngine::Definition if defined?(::EventEngine::Definition)
     end
 
     def subject_registry

@@ -13,5 +13,9 @@ module EventEngine
 
       assert_instance_of DefinitionPublisher, port.publisher
     end
+
+    test "registering is a no-op when no pack has loaded the definition port" do
+      assert_nil EventEngine.register_definition_publisher!
+    end
   end
 end
