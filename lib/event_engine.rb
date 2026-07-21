@@ -18,7 +18,6 @@ require "event_engine/schema_compatibility"
 require "event_engine/schema_catalog"
 require "event_engine/schema_catalog_builder"
 require "event_engine/railtie"
-require "event_engine/definition_loader"
 require "event_engine/the_local"
 
 module EventEngine
