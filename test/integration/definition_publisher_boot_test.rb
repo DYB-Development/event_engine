@@ -52,4 +52,17 @@ class DefinitionPublisherBootTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "publishing through the port dispatches the built event to a registered handler" do
+    with_definition_port do |port|
+      boot_catalog do
+        received = []
+        EventEngine.register_handler(->(event) { received << event }, process_types: :all)
+
+        port.publisher.publish(:cow_fed, domain: :sales, inputs: { cow: OpenStruct.new(weight: 500) })
+
+        assert_equal 500, received.first.payload[:weight]
+      end
+    end
+  end
 end
