@@ -17,4 +17,12 @@ class EventEngine::ProcessorRegistryTest < ActiveSupport::TestCase
 
     assert_same replacement, registry.fetch(:delivery)
   end
+
+  test "clear! removes registrations" do
+    registry = EventEngine::ProcessorRegistry.new
+    registry.register(:telemetry, ->(event) { event })
+    registry.clear!
+
+    assert_nil registry.fetch(:telemetry)
+  end
 end

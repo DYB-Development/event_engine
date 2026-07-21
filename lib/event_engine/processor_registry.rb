@@ -11,5 +11,9 @@ module EventEngine
     def fetch(name)
       @processors[name]
     end
+
+    def clear!
+      @processors.clear
+    end
   end
 end
