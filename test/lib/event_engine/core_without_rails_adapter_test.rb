@@ -1,23 +1,26 @@
 require "test_helper"
 require "tmpdir"
 require "ostruct"
+require "json"
 
 class CoreWithoutRailsAdapterTest < ActiveSupport::TestCase
-  class CowFed < EventEngine::EventDefinition
-    event_name :cow_fed
-    event_type :domain
-
-    input :cow
-    required_payload :weight, from: :cow, attr: :weight
+  def cow_fed_schema
+    EventEngine::EventDefinition::Schema.new(
+      event_name: :cow_fed,
+      event_version: 1,
+      event_type: :domain,
+      required_inputs: [:cow],
+      optional_inputs: [],
+      payload_fields: [{ name: :weight, required: true, from: :cow, attr: :weight }]
+    )
   end
 
-  test "compiles, boots from a file, and builds an event using only core POROs" do
+  test "boots from a schema.json and builds an event using only core POROs" do
     previous_registry = EventEngine.schema_registry
-    compiled = EventEngine::DslCompiler.compile([CowFed])
 
     Dir.mktmpdir do |dir|
       schema_path = File.join(dir, "event_schema.json")
-      EventEngine::EventSchemaJsonWriter.write(schema_path, compiled.event_schema)
+      File.write(schema_path, JSON.pretty_generate([cow_fed_schema.to_h]))
 
       EventEngine.boot_from_schema!(
         schema_path: schema_path,
