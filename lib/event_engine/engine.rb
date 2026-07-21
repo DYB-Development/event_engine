@@ -32,22 +32,21 @@ module EventEngine
       def handle_missing_schema!(schema_path)
         if Rails.env.development? || Rails.env.test?
           Rails.logger.warn(
-            "[EventEngine] Schema file not found at #{schema_path}. " \
-            "Run: bin/rails event_engine:schema:dump"
+            "[EventEngine] Schema catalog not found at #{schema_path}. " \
+            "Commit it, or build it from your packs' schema.json with: " \
+            "bin/rails event_engine:schema:catalog"
           )
           return
         end
 
         raise <<~MSG
-          EventEngine schema file missing.
+          EventEngine schema catalog missing.
 
           Expected to find:
             #{schema_path}
 
-          Run:
-            bin/rails event_engine:schema:dump
-
-          And commit the generated file.
+          Commit the catalog, or build it from your packs' schema.json:
+            bin/rails event_engine:schema:catalog
         MSG
       end
     end
