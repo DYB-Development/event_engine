@@ -56,6 +56,10 @@ module EventEngine
       dispatch(Event.new(**attrs))
     end
 
+    def register_definition_publisher!(port)
+      port.publisher = DefinitionPublisher.new
+    end
+
     def subject_registry
       @subject_registry ||= SubjectRegistry.new
     end
