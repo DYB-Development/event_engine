@@ -8,4 +8,13 @@ class EventEngine::ProcessorRegistryTest < ActiveSupport::TestCase
 
     assert_same processor, registry.fetch(:subscribers)
   end
+
+  test "registering a taken name replaces the prior processor" do
+    registry = EventEngine::ProcessorRegistry.new
+    replacement = ->(event) { event }
+    registry.register(:delivery, ->(event) { event })
+    registry.register(:delivery, replacement)
+
+    assert_same replacement, registry.fetch(:delivery)
+  end
 end
