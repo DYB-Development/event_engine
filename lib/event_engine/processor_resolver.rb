@@ -5,7 +5,8 @@ module EventEngine
     end
 
     def resolve(event)
-      event_processor(event) || domain_processor(event) || @configuration.default_processor
+      event_processor(event) || domain_processor(event) || @configuration.default_processor ||
+        raise(UnroutableEventError.new(event))
     end
 
     private

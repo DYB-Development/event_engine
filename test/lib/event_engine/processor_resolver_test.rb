@@ -31,4 +31,10 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
 
     assert_equal :ledger, EventEngine::ProcessorResolver.new(config).resolve(event)
   end
+
+  test "raises when no rule and no default resolve" do
+    assert_raises(EventEngine::UnroutableEventError) do
+      EventEngine::ProcessorResolver.new(configuration).resolve(event)
+    end
+  end
 end
