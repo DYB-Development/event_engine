@@ -60,7 +60,9 @@ module EventEngine
       attrs[:subject] = schema.subject
       attrs[:domain] = schema.domain
 
-      dispatch(Event.new(**attrs))
+      event = Event.new(**attrs)
+      process(event)
+      dispatch(event)
     end
 
     def register_definition_publisher!(port = definition_port)
@@ -112,6 +114,14 @@ module EventEngine
 
     def dispatch(event)
       handler_registry.dispatch(event)
+    end
+
+    def process(event)
+      resolver = ProcessorResolver.new(configuration)
+      return event unless resolver.routes?
+
+      processor_registry.fetch(resolver.resolve(event)).call(event)
+      event
     end
 
     def reset_handlers!
