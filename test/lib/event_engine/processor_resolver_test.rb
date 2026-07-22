@@ -49,4 +49,11 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
   test "does not route when nothing is configured" do
     refute_predicate EventEngine::ProcessorResolver.new(configuration), :routes?
   end
+
+  test "routes when a default processor is configured" do
+    config = configuration
+    config.default_processor = :subscribers
+
+    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  end
 end
