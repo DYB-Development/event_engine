@@ -8,6 +8,8 @@ require "event_engine/event_builder"
 require "event_engine/definition_publisher"
 require "event_engine/handler_registry"
 require "event_engine/processor_registry"
+require "event_engine/unroutable_event_error"
+require "event_engine/processor_resolver"
 require "event_engine/event_schema"
 require "event_engine/schema_registry"
 require "event_engine/subject_registry"
@@ -58,7 +60,9 @@ module EventEngine
       attrs[:subject] = schema.subject
       attrs[:domain] = schema.domain
 
-      dispatch(Event.new(**attrs))
+      event = Event.new(**attrs)
+      process(event)
+      dispatch(event)
     end
 
     def register_definition_publisher!(port = definition_port)
@@ -110,6 +114,14 @@ module EventEngine
 
     def dispatch(event)
       handler_registry.dispatch(event)
+    end
+
+    def process(event)
+      resolver = ProcessorResolver.new(configuration)
+      return event unless resolver.routes?
+
+      processor_registry.fetch(resolver.resolve(event)).call(event)
+      event
     end
 
     def reset_handlers!
