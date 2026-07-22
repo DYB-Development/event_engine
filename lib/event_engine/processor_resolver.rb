@@ -5,7 +5,9 @@ module EventEngine
     end
 
     def routes?
-      !@configuration.default_processor.nil? || @configuration.domain_processors.any?
+      !@configuration.default_processor.nil? ||
+        @configuration.domain_processors.any? ||
+        @configuration.event_processors.any?
     end
 
     def resolve(event)

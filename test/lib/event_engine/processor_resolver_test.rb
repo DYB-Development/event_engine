@@ -63,4 +63,11 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
 
     assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
   end
+
+  test "routes when only an event rule is configured" do
+    config = configuration
+    config.event_processors = { cow_fed: :ledger }
+
+    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  end
 end
