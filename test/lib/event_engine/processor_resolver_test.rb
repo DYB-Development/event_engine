@@ -56,4 +56,11 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
 
     assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
   end
+
+  test "routes when only a domain rule is configured" do
+    config = configuration
+    config.domain_processors = { herd: :telemetry }
+
+    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  end
 end
