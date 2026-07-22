@@ -12,11 +12,14 @@ module EventEngine
 
     attr_accessor :domain_processors
 
+    attr_accessor :event_processors
+
     def initialize
       @logger = defined?(Rails) ? Rails.logger : Logger.new($stdout)
       @schema_path = "db/event_schema.json"
       @publisher_schema_paths = []
       @domain_processors = {}
+      @event_processors = {}
     end
   end
 end

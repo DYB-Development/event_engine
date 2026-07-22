@@ -5,10 +5,14 @@ module EventEngine
     end
 
     def resolve(event)
-      domain_processor(event) || @configuration.default_processor
+      event_processor(event) || domain_processor(event) || @configuration.default_processor
     end
 
     private
+
+    def event_processor(event)
+      @configuration.event_processors[event.event_name]
+    end
 
     def domain_processor(event)
       @configuration.domain_processors[event.domain]

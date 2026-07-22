@@ -23,4 +23,12 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
 
     assert_equal :telemetry, EventEngine::ProcessorResolver.new(config).resolve(event)
   end
+
+  test "resolves the event rule ahead of the domain rule" do
+    config = configuration
+    config.domain_processors = { herd: :telemetry }
+    config.event_processors = { cow_fed: :ledger }
+
+    assert_equal :ledger, EventEngine::ProcessorResolver.new(config).resolve(event)
+  end
 end
