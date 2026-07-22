@@ -37,4 +37,12 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
       EventEngine::ProcessorResolver.new(configuration).resolve(event)
     end
   end
+
+  test "the unroutable error names the event" do
+    error = assert_raises(EventEngine::UnroutableEventError) do
+      EventEngine::ProcessorResolver.new(configuration).resolve(event(event_name: :barn_built))
+    end
+
+    assert_includes error.message, "barn_built"
+  end
 end
