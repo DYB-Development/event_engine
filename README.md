@@ -213,6 +213,29 @@ Set via `EventEngine.configure { |config| … }`. All fields are optional.
 | `metadata_defaults` | `nil` | A callable (`-> { Hash }`) | Called on each emit; its hash is merged **under** any call-site `metadata:` (call-site wins). A raising callable is swallowed and logged, so emission never breaks. |
 | `logger` | `Rails.logger` | Any Logger | Where the engine logs (missing-schema warning, a raising `metadata_defaults`). |
 | `publisher_schema_paths` | `[]` | Array of paths | Inputs to the **optional** catalog-aggregation task only (see below). Not part of the runtime path. |
+| `default_processor` | `nil` | Processor name | Registered processor handling any event no rule below matches. |
+| `domain_processors` | `{}` | `{ domain => processor name }` | Directs every event in a domain to a registered processor. Overrides `default_processor`. |
+| `event_processors` | `{}` | `{ event_name => processor name }` | Directs one event to a registered processor. Overrides both of the above. |
+
+### Processor routing
+
+A processor is any object responding to `#call(event)`, registered by name:
+
+```ruby
+EventEngine.register_processor(:subscribers, SubscriberFanout.new)
+
+EventEngine.configure do |config|
+  config.default_processor = :subscribers
+  config.domain_processors = { billing: :ledger }
+  config.event_processors  = { invoice_voided: :audit }
+end
+```
+
+At emit time the processor is resolved **event > domain > default** and invoked with
+the built event. Routing is opt-in: with none of the three fields set, `emit` behaves
+as before and no processor is invoked. Once any of them is set, an event that matches
+no rule and has no default raises `EventEngine::UnroutableEventError` naming the event
+rather than being silently dropped.
 
 ---
 
