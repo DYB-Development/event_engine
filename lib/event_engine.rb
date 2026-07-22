@@ -7,6 +7,7 @@ require "event_engine/event_definition"
 require "event_engine/event_builder"
 require "event_engine/definition_publisher"
 require "event_engine/handler_registry"
+require "event_engine/processor_registry"
 require "event_engine/event_schema"
 require "event_engine/schema_registry"
 require "event_engine/subject_registry"
@@ -29,6 +30,10 @@ module EventEngine
 
     def handler_registry
       @handler_registry ||= HandlerRegistry.new
+    end
+
+    def processor_registry
+      @processor_registry ||= ProcessorRegistry.new
     end
 
     def schema_registry
@@ -99,12 +104,20 @@ module EventEngine
       handler_registry.register(handler, process_types: process_types)
     end
 
+    def register_processor(name, processor)
+      processor_registry.register(name, processor)
+    end
+
     def dispatch(event)
       handler_registry.dispatch(event)
     end
 
     def reset_handlers!
       handler_registry.clear!
+    end
+
+    def reset_processors!
+      processor_registry.clear!
     end
 
     def boot_from_schema!(schema_path:, registry:)
