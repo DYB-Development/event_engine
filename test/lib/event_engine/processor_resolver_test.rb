@@ -45,4 +45,8 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
 
     assert_includes error.message, "barn_built"
   end
+
+  test "does not route when nothing is configured" do
+    refute_predicate EventEngine::ProcessorResolver.new(configuration), :routes?
+  end
 end

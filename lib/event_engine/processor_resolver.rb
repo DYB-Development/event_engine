@@ -4,6 +4,10 @@ module EventEngine
       @configuration = configuration
     end
 
+    def routes?
+      false
+    end
+
     def resolve(event)
       event_processor(event) || domain_processor(event) || @configuration.default_processor ||
         raise(UnroutableEventError.new(event))
