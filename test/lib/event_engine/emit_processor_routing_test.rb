@@ -48,5 +48,21 @@ module EventEngine
 
       assert_equal 1, received.size
     end
+
+    test "emit prefers the event rule over the domain rule and the default" do
+      chosen = []
+      %i[by_default by_domain by_event].each do |name|
+        EventEngine.register_processor(name, ->(_event) { chosen << name })
+      end
+      EventEngine.configure do |config|
+        config.default_processor = :by_default
+        config.domain_processors = { herd: :by_domain }
+        config.event_processors = { cow_fed: :by_event }
+      end
+
+      emit_cow_fed
+
+      assert_equal [:by_event], chosen
+    end
   end
 end
