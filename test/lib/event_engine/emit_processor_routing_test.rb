@@ -64,5 +64,11 @@ module EventEngine
 
       assert_equal [:by_event], chosen
     end
+
+    test "emit raises when routing is configured but nothing matches the event" do
+      EventEngine.configure { |config| config.domain_processors = { flock: :shepherd } }
+
+      assert_raises(UnroutableEventError) { emit_cow_fed }
+    end
   end
 end
