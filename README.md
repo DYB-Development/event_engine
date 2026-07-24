@@ -279,10 +279,6 @@ Honest gaps in the current runtime:
   production if that file is missing — which is in tension with the fully-passive
   goal (schema arriving only via `register_slice!`). Reconciling the two is part of
   finishing the passive wiring.
-- **`the_local` guides.** The AI-assistant reference under
-  `lib/event_engine/reference/` and the `the_local` subagents still describe the old
-  in-gem DSL. They are generated provider docs (owned by `the_local-develop`) and
-  will be regenerated to match this runtime.
 
 ---
 
