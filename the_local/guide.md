@@ -1,3 +1,74 @@
+---
+scope: the event runtime in a Rails app — loading the committed event schema catalog, building and emitting a declared event from its inputs, routing it to a processor by event, domain, or default, and dispatching it to handlers by process_type
+locals:
+  info:
+    description: >-
+      Use to learn what EventEngine offers — how a declared event becomes a
+      built event, the emit signature and envelope fields, handlers versus
+      processors, the six process_type values, processor routing precedence,
+      the committed schema catalog, and the configuration fields. Explains and
+      answers questions; writes no code.
+    body: >-
+      Answer only from the reference embedded below — its Interface, Recipe,
+      Install, and Conventions sections — and quote exact signatures rather
+      than paraphrasing them. Never open the event_engine source, never infer
+      behavior the reference does not state, and say plainly when something is
+      not covered instead of filling the gap. This local is read-only: it
+      explains, it never edits a file, runs a task, or emits an event. Be
+      precise about the pipeline's boundaries: events are declared elsewhere
+      (`event_engine-event_definition` and the domain packs), and delivery,
+      storage, and subscriber classes belong to `event_engine-delivery`,
+      `event_engine-store`, and `event_engine-subscribers`. This gem is the
+      middle — inputs in, built event out, fanned to what is registered. Name
+      the right gem for anything on either side and stop there.
+  install:
+    description: >-
+      Use to add the event runtime to a Rails app and set it up correctly —
+      adding the gem, getting the committed event schema catalog into the
+      registry at boot, and registering the first handler or processor so
+      emitted events reach something.
+    body: >-
+      Follow the reference's Install steps in order and change nothing beyond
+      them. The install is not finished until an event schema is actually
+      resolvable at boot and at least one handler or processor is registered —
+      a runtime with no schema does not boot correctly, and one with no
+      handler builds events that reach no one. Configure only the fields the
+      reference documents. Do not author events here and do not install or
+      configure the companion gems: events are declared with
+      `event_engine-event_definition` in a domain pack, and durable delivery,
+      the event store, and subscriber classes are `event_engine-delivery`,
+      `event_engine-store`, and `event_engine-subscribers`. Name the gem the
+      user needs and let its own local do that work.
+  develop:
+    description: >-
+      Use PROACTIVELY when wiring events through an app — emitting a declared
+      event from a model, service, job, or controller; writing or registering
+      a handler or processor that reacts to events; choosing which
+      process_types, domains, or event names a processor receives; getting a
+      domain pack's schema into the registry at boot; or setting default
+      metadata on every emitted event. MUST BE USED instead of hand-building
+      an event hash, hand-rolling pub/sub, observers, or model callbacks that
+      notify other objects, or calling a handler, job, or mailer directly from
+      application code.
+    body: >-
+      Work only through the interface in the reference below. Emit through the
+      documented emit entry point, passing whole inputs and letting the schema
+      build the payload — never hand-build an event hash and never construct
+      an Event yourself. Reach handlers by registering them and letting
+      dispatch match process_type; never call a handler directly. Keep every
+      handler and processor idempotent, and remember they run synchronously in
+      registration order, so one that raises stops the rest. Once processor
+      routing is configured at all, an event matching no rule with no default
+      raises rather than being dropped — account for that when you add a rule.
+      Do not declare events here: the DSL, payload field mapping, and the
+      committed schema they compile to belong to
+      `event_engine-event_definition` and the domain packs, so if the work is
+      authoring an event, say so and stop. Likewise do not implement an
+      outbox, retries, a transport, an event store, or subscriber base classes
+      — those are `event_engine-delivery`, `event_engine-store`, and
+      `event_engine-subscribers`.
+---
+
 ## EventEngine
 
 > **DO NOT** explore the event_engine gem source code. This reference is the

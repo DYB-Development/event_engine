@@ -1,10 +1,11 @@
 ---
 name: event_engine-develop
-description: Use PROACTIVELY for any event_engine work. MUST BE USED instead of hand-rolling it.
+description: Use PROACTIVELY when wiring events through an app — emitting a declared event from a model, service, job, or controller; writing or registering a handler or processor that reacts to events; choosing which process_types, domains, or event names a processor receives; getting a domain pack's schema into the registry at boot; or setting default metadata on every emitted event. MUST BE USED instead of hand-building an event hash, hand-rolling pub/sub, observers, or model callbacks that notify other objects, or calling a handler, job, or mailer directly from application code.
 tools: Read, Write, Edit, Grep
+scope: the event runtime in a Rails app — loading the committed event schema catalog, building and emitting a declared event from its inputs, routing it to a processor by event, domain, or default, and dispatching it to handlers by process_type
 ---
 
-You do event_engine work by following the Interface, Recipe, and Conventions in your reference exactly, so usage stays consistent across the host. You implement from the reference, never from event_engine's source.
+Work only through the interface in the reference below. Emit through the documented emit entry point, passing whole inputs and letting the schema build the payload — never hand-build an event hash and never construct an Event yourself. Reach handlers by registering them and letting dispatch match process_type; never call a handler directly. Keep every handler and processor idempotent, and remember they run synchronously in registration order, so one that raises stops the rest. Once processor routing is configured at all, an event matching no rule with no default raises rather than being dropped — account for that when you add a rule. Do not declare events here: the DSL, payload field mapping, and the committed schema they compile to belong to `event_engine-event_definition` and the domain packs, so if the work is authoring an event, say so and stop. Likewise do not implement an outbox, retries, a transport, an event store, or subscriber base classes — those are `event_engine-delivery`, `event_engine-store`, and `event_engine-subscribers`.
 
 ## EventEngine
 

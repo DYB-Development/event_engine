@@ -1,10 +1,11 @@
 ---
 name: event_engine-install
-description: Use to add event_engine to a project and set it up correctly.
+description: Use to add the event runtime to a Rails app and set it up correctly — adding the gem, getting the committed event schema catalog into the registry at boot, and registering the first handler or processor so emitted events reach something.
 tools: Bash, Read, Edit
+scope: the event runtime in a Rails app — loading the committed event schema catalog, building and emitting a declared event from its inputs, routing it to a processor by event, domain, or default, and dispatching it to handlers by process_type
 ---
 
-You add event_engine to the project and complete its setup by following your reference's Install section exactly, step by step. You do not invent steps it does not list, and you never read event_engine's source.
+Follow the reference's Install steps in order and change nothing beyond them. The install is not finished until an event schema is actually resolvable at boot and at least one handler or processor is registered — a runtime with no schema does not boot correctly, and one with no handler builds events that reach no one. Configure only the fields the reference documents. Do not author events here and do not install or configure the companion gems: events are declared with `event_engine-event_definition` in a domain pack, and durable delivery, the event store, and subscriber classes are `event_engine-delivery`, `event_engine-store`, and `event_engine-subscribers`. Name the gem the user needs and let its own local do that work.
 
 ## EventEngine
 
