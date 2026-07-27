@@ -1,0 +1,27 @@
+scope: events — registering processors and publishers, building the schema catalog, and directing emitted events to the right processor
+
+install:
+  - EventEngine.configure
+
+develop:
+  - EventEngine.register_processor
+  - EventEngine.register_definition_publisher!
+  - EventEngine.register_handler
+  - publisher_schema_paths
+  - event_processors
+  - domain_processors
+  - default_processor
+  - bin/rails event_engine:schema:catalog
+  - bin/rails event_engine:catalog
+
+sources:
+  - lib/event_engine.rb
+  - lib/event_engine/engine.rb
+  - lib/event_engine/configuration.rb
+  - lib/event_engine/definition_publisher.rb
+  - lib/event_engine/processor_registry.rb
+  - lib/event_engine/processor_resolver.rb
+  - lib/event_engine/handler_registry.rb
+  - lib/event_engine/schema_catalog_builder.rb
+  - lib/tasks/event_engine_catalog.rake
+  - lib/tasks/event_engine_schema_catalog.rake
