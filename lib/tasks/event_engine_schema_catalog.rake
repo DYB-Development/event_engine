@@ -5,7 +5,7 @@ namespace :event_engine do
       catalog_path = Rails.root.join(EventEngine.configuration.schema_path)
 
       EventEngine::SchemaCatalogBuilder.build(
-        sources: EventEngine.configuration.publisher_schema_paths,
+        sources: EventEngine.schema_sources,
         catalog_path: catalog_path
       )
 
