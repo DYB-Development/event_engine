@@ -2,7 +2,7 @@ require "test_helper"
 
 class SchemaCatalogTest < ActiveSupport::TestCase
   def schema(event_name:, subject: nil, payload_fields: [])
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: event_name,
       event_version: 1,
       event_type: :domain,

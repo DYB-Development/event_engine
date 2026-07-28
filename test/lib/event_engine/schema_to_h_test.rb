@@ -2,7 +2,7 @@ require "test_helper"
 
 class SchemaToHTest < ActiveSupport::TestCase
   test "schema serializes to a plain data hash" do
-    schema = EventEngine::EventDefinition::Schema.new(
+    schema = EventEngine::CatalogEntry.new(
       event_name: "cow.fed",
       event_version: 1,
       event_type: "domain",

@@ -7,7 +7,7 @@ class FileSchemaRegistryTest < ActiveSupport::TestCase
   end
 
   setup do
-    schema = EventEngine::EventDefinition::Schema.new(
+    schema = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,

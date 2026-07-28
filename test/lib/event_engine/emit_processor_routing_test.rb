@@ -4,7 +4,7 @@ require "ostruct"
 module EventEngine
   class EmitProcessorRoutingTest < ActiveSupport::TestCase
     def cow_fed_schema
-      EventDefinition::Schema.new(
+      CatalogEntry.new(
         event_name: :cow_fed,
         event_version: 1,
         event_type: :domain,

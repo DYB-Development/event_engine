@@ -2,7 +2,7 @@ require "test_helper"
 
 class EventBuilderVersionTest < ActiveSupport::TestCase
   def build_schema(version:)
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: version,
       event_type: :domain,

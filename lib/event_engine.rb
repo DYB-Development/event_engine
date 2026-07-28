@@ -2,7 +2,7 @@ require_relative "event_engine/version"
 
 require "event_engine/engine"
 require "event_engine/configuration"
-require "event_engine/event_definition"
+require "event_engine/catalog_entry"
 require "event_engine/event_builder"
 require "event_engine/definition_publisher"
 require "event_engine/handler_registry"

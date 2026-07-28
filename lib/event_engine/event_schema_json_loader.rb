@@ -10,7 +10,7 @@ module EventEngine
       return registry if contents.strip.empty?
 
       JSON.parse(contents).each do |attributes|
-        registry.register(EventDefinition::Schema.from_h(attributes))
+        registry.register(CatalogEntry.from_h(attributes))
       end
 
       registry

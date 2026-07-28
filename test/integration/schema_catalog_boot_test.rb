@@ -14,7 +14,7 @@ class SchemaCatalogBootTest < ActiveSupport::TestCase
   end
 
   def build_schema(event_name)
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: event_name,
       event_version: 1,
       event_type: :domain,

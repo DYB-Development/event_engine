@@ -2,7 +2,7 @@ require "test_helper"
 
 class EventRegistryDomainScopedLookupTest < ActiveSupport::TestCase
   def build_schema(domain:)
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,

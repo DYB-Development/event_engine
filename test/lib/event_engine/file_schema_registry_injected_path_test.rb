@@ -4,7 +4,7 @@ require "tmpdir"
 
 class FileSchemaRegistryInjectedPathTest < ActiveSupport::TestCase
   def cow_fed_schema
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,

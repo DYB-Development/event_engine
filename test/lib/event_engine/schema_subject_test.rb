@@ -2,7 +2,7 @@ require "test_helper"
 
 class SchemaSubjectTest < ActiveSupport::TestCase
   test "schema retains its subject" do
-    schema = EventEngine::EventDefinition::Schema.new(
+    schema = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,

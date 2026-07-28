@@ -4,7 +4,7 @@ require "ostruct"
 module EventEngine
   class PassthroughPayloadTest < ActiveSupport::TestCase
     def user_defined_event_schema
-      EventDefinition::Schema.new(
+      CatalogEntry.new(
         event_name: :user_defined_event,
         event_version: 1,
         event_type: :domain,

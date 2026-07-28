@@ -13,7 +13,7 @@ module EventEngine
     end
 
     def write_slice(event_name)
-      schema = EventDefinition::Schema.new(
+      schema = CatalogEntry.new(
         event_name: event_name,
         event_version: 1,
         event_type: :domain,
