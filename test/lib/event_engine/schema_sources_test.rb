@@ -20,5 +20,12 @@ module EventEngine
     test "discovers nothing when no pack has loaded the definition port" do
       assert_equal [], EventEngine.discovered_schema_paths(nil)
     end
+
+    test "falls back to discovery when no publisher schema paths are configured" do
+      EventEngine.configuration.publisher_schema_paths = []
+      port = Class.new { def self.pack_schema_paths = [ "/packs/sales/schema.json" ] }
+
+      assert_equal [ "/packs/sales/schema.json" ], EventEngine.schema_sources(port)
+    end
   end
 end

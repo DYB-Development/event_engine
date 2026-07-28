@@ -64,8 +64,11 @@ module EventEngine
       dispatch(event)
     end
 
-    def schema_sources
-      configuration.publisher_schema_paths
+    def schema_sources(port = definition_port)
+      configured = configuration.publisher_schema_paths
+      return configured if configured.any?
+
+      discovered_schema_paths(port)
     end
 
     def discovered_schema_paths(port = definition_port)
