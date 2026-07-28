@@ -7,5 +7,11 @@ module EventEngine
 
       assert_equal :inline, rules.for(event_name: :cow_fed, pack: :sales)
     end
+
+    test "prefers the pack rule over the default" do
+      rules = ProcessingRules.new(default: :inline, packs: { sales: :background })
+
+      assert_equal :background, rules.for(event_name: :cow_fed, pack: :sales)
+    end
   end
 end

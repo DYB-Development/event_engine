@@ -1,11 +1,12 @@
 module EventEngine
   class ProcessingRules
-    def initialize(default: nil)
+    def initialize(default: nil, packs: {})
       @default = default
+      @packs = packs
     end
 
     def for(event_name:, pack:)
-      @default
+      @packs[pack] || @default
     end
   end
 end
