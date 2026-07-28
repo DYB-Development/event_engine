@@ -64,6 +64,10 @@ module EventEngine
       dispatch(event)
     end
 
+    def schema_sources
+      configuration.publisher_schema_paths
+    end
+
     def register_definition_publisher!(port = definition_port)
       return nil unless port.respond_to?(:publisher=)
 
