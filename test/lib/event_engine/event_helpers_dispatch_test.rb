@@ -32,6 +32,7 @@ module EventEngine
 
     teardown do
       EventEngine.schema_registry = @previous_registry
+      EventEngine.processing_rules = nil
       EventEngine.reset_handlers!
     end
 
@@ -44,9 +45,10 @@ module EventEngine
       assert_equal 1, received.size
     end
 
-    test "the dispatched event carries the declared process_type" do
+    test "the dispatched event carries the process_type from the rules" do
       received = []
       EventEngine.register_handler(->(event) { received << event }, process_types: :all)
+      EventEngine.processing_rules = ProcessingRules.new(events: { cow_fed: :broker })
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 
