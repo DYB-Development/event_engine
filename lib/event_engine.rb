@@ -2,7 +2,6 @@ require_relative "event_engine/version"
 
 require "event_engine/engine"
 require "event_engine/configuration"
-require "event_engine/process_type"
 require "event_engine/event_definition"
 require "event_engine/event_builder"
 require "event_engine/definition_publisher"
