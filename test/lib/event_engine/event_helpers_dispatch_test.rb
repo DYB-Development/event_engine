@@ -8,7 +8,6 @@ module EventEngine
         event_name: :cow_fed,
         event_version: 1,
         event_type: :domain,
-        process_type: :broker,
         subject: :feeding,
         domain: :sales,
         required_inputs: [:cow],

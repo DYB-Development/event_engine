@@ -26,7 +26,6 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
     a = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
-      process_type: :durable,
       required_inputs: [:cow],
       optional_inputs: [],
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
@@ -35,7 +34,6 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
     b = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
-      process_type: :broker,
       required_inputs: [:cow],
       optional_inputs: [],
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]

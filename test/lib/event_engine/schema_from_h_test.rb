@@ -7,7 +7,6 @@ class SchemaFromHTest < ActiveSupport::TestCase
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,
-      process_type: :durable,
       subject: :feeding,
       domain: :sales,
       required_inputs: [:cow],
