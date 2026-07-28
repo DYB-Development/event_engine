@@ -13,5 +13,12 @@ module EventEngine
 
       assert_equal :background, rules.for(event_name: :cow_fed, pack: :sales)
     end
+
+    test "prefers the event rule over the pack rule" do
+      rules = ProcessingRules.new(default: :inline, packs: { sales: :background },
+                                  events: { cow_fed: :durable })
+
+      assert_equal :durable, rules.for(event_name: :cow_fed, pack: :sales)
+    end
   end
 end
