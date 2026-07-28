@@ -1,0 +1,18 @@
+require "test_helper"
+require "tmpdir"
+
+module EventEngine
+  class RulesFileTest < ActiveSupport::TestCase
+    def in_tmp
+      Dir.mktmpdir { |dir| yield File.join(dir, "event_rules.yml") }
+    end
+
+    test "lists every catalog event so each one needs a decision" do
+      in_tmp do |path|
+        RulesFile.sync(path: path, event_names: %i[lead_created cow_fed])
+
+        assert_equal({ "lead_created" => nil, "cow_fed" => nil }, YAML.safe_load_file(path)["events"])
+      end
+    end
+  end
+end
