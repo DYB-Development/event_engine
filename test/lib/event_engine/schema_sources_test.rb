@@ -16,5 +16,9 @@ module EventEngine
 
       assert_equal [ "/packs/marketing/schema.json" ], EventEngine.discovered_schema_paths(port)
     end
+
+    test "discovers nothing when no pack has loaded the definition port" do
+      assert_equal [], EventEngine.discovered_schema_paths(nil)
+    end
   end
 end

@@ -69,6 +69,8 @@ module EventEngine
     end
 
     def discovered_schema_paths(port = definition_port)
+      return [] unless port.respond_to?(:pack_schema_paths)
+
       port.pack_schema_paths
     end
 
