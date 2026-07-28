@@ -1,73 +1,59 @@
 require "test_helper"
 
 class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
-  def configuration
-    EventEngine::Configuration.new
+  def rules(**declared)
+    EventEngine::ProcessingRules.new(**declared)
   end
 
   def event(event_name: :cow_fed, domain: :herd)
     EventEngine::Event.new(event_name: event_name, domain: domain)
   end
 
-  test "resolves the default processor when no rule matches" do
-    config = configuration
-    config.default_processor = :subscribers
+  test "resolves the default rule when nothing more specific matches" do
+    resolver = EventEngine::ProcessorResolver.new(rules(default: :subscribers))
 
-    assert_equal :subscribers, EventEngine::ProcessorResolver.new(config).resolve(event)
+    assert_equal :subscribers, resolver.resolve(event)
   end
 
-  test "resolves the domain rule ahead of the default" do
-    config = configuration
-    config.default_processor = :subscribers
-    config.domain_processors = { herd: :telemetry }
+  test "resolves the pack rule ahead of the default" do
+    resolver = EventEngine::ProcessorResolver.new(rules(default: :subscribers, packs: { herd: :telemetry }))
 
-    assert_equal :telemetry, EventEngine::ProcessorResolver.new(config).resolve(event)
+    assert_equal :telemetry, resolver.resolve(event)
   end
 
-  test "resolves the event rule ahead of the domain rule" do
-    config = configuration
-    config.domain_processors = { herd: :telemetry }
-    config.event_processors = { cow_fed: :ledger }
+  test "resolves the event rule ahead of the pack rule" do
+    resolver = EventEngine::ProcessorResolver.new(rules(packs: { herd: :telemetry }, events: { cow_fed: :ledger }))
 
-    assert_equal :ledger, EventEngine::ProcessorResolver.new(config).resolve(event)
+    assert_equal :ledger, resolver.resolve(event)
   end
 
   test "raises when no rule and no default resolve" do
     assert_raises(EventEngine::UnroutableEventError) do
-      EventEngine::ProcessorResolver.new(configuration).resolve(event)
+      EventEngine::ProcessorResolver.new(rules).resolve(event)
     end
   end
 
   test "the unroutable error names the event" do
     error = assert_raises(EventEngine::UnroutableEventError) do
-      EventEngine::ProcessorResolver.new(configuration).resolve(event(event_name: :barn_built))
+      EventEngine::ProcessorResolver.new(rules).resolve(event(event_name: :barn_built))
     end
 
     assert_includes error.message, "barn_built"
   end
 
-  test "does not route when nothing is configured" do
-    refute_predicate EventEngine::ProcessorResolver.new(configuration), :routes?
+  test "does not route when nothing is declared" do
+    refute_predicate EventEngine::ProcessorResolver.new(rules), :routes?
   end
 
-  test "routes when a default processor is configured" do
-    config = configuration
-    config.default_processor = :subscribers
-
-    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  test "routes when a default rule is declared" do
+    assert_predicate EventEngine::ProcessorResolver.new(rules(default: :subscribers)), :routes?
   end
 
-  test "routes when only a domain rule is configured" do
-    config = configuration
-    config.domain_processors = { herd: :telemetry }
-
-    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  test "routes when only a pack rule is declared" do
+    assert_predicate EventEngine::ProcessorResolver.new(rules(packs: { herd: :telemetry })), :routes?
   end
 
-  test "routes when only an event rule is configured" do
-    config = configuration
-    config.event_processors = { cow_fed: :ledger }
-
-    assert_predicate EventEngine::ProcessorResolver.new(config), :routes?
+  test "routes when only an event rule is declared" do
+    assert_predicate EventEngine::ProcessorResolver.new(rules(events: { cow_fed: :ledger })), :routes?
   end
 end

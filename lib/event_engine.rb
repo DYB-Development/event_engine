@@ -135,7 +135,7 @@ module EventEngine
     end
 
     def process(event)
-      resolver = ProcessorResolver.new(configuration)
+      resolver = ProcessorResolver.new(processing_rules)
       return event unless resolver.routes?
 
       processor_registry.fetch(resolver.resolve(event)).call(event)
