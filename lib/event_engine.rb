@@ -68,6 +68,10 @@ module EventEngine
       configuration.publisher_schema_paths
     end
 
+    def discovered_schema_paths(port = definition_port)
+      port.pack_schema_paths
+    end
+
     def register_definition_publisher!(port = definition_port)
       return nil unless port.respond_to?(:publisher=)
 

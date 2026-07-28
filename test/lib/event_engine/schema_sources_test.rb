@@ -10,5 +10,11 @@ module EventEngine
 
       assert_equal [ "/configured/schema.json" ], EventEngine.schema_sources
     end
+
+    test "discovers the registered packs' schema paths when none are configured" do
+      port = Class.new { def self.pack_schema_paths = [ "/packs/marketing/schema.json" ] }
+
+      assert_equal [ "/packs/marketing/schema.json" ], EventEngine.discovered_schema_paths(port)
+    end
   end
 end
