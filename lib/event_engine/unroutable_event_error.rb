@@ -1,9 +1,9 @@
 module EventEngine
   class UnroutableEventError < StandardError
     def initialize(event)
-      super("no processor resolved for event #{event.event_name.inspect} " \
-            "(domain #{event.domain.inspect}); configure default_processor, " \
-            "domain_processors, or event_processors")
+      super("no processing rule for event #{event.event_name.inspect} " \
+            "(pack #{event.domain.inspect}); declare it in the rules file " \
+            "under events, packs, or default")
     end
   end
 end
