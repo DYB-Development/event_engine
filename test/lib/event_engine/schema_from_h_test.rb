@@ -3,11 +3,10 @@ require "json"
 
 class SchemaFromHTest < ActiveSupport::TestCase
   def build_schema
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,
-      process_type: :durable,
       subject: :feeding,
       domain: :sales,
       required_inputs: [:cow],
@@ -21,7 +20,7 @@ class SchemaFromHTest < ActiveSupport::TestCase
   test "from_h reconstructs a Schema equal to the one to_h came from" do
     schema = build_schema
 
-    assert_equal schema, EventEngine::EventDefinition::Schema.from_h(schema.to_h)
+    assert_equal schema, EventEngine::CatalogEntry.from_h(schema.to_h)
   end
 
   test "from_h reconstructs a Schema from the JSON-parsed hash" do
@@ -29,6 +28,6 @@ class SchemaFromHTest < ActiveSupport::TestCase
 
     parsed = JSON.parse(JSON.generate(schema.to_h))
 
-    assert_equal schema, EventEngine::EventDefinition::Schema.from_h(parsed)
+    assert_equal schema, EventEngine::CatalogEntry.from_h(parsed)
   end
 end

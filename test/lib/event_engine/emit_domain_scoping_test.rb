@@ -4,7 +4,7 @@ require "ostruct"
 module EventEngine
   class EmitDomainScopingTest < ActiveSupport::TestCase
     def build_schema(domain:)
-      EventDefinition::Schema.new(
+      CatalogEntry.new(
         event_name: :cow_fed,
         event_version: 1,
         event_type: :domain,

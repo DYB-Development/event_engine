@@ -3,7 +3,7 @@ require "digest"
 
 class SchemaFingerprintTest < ActiveSupport::TestCase
   test "schemas with same structure have same fingerprint" do
-    a = EventEngine::EventDefinition::Schema.new(
+    a = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       required_inputs: [:cow],
@@ -11,7 +11,7 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
     )
 
-    b = EventEngine::EventDefinition::Schema.new(
+    b = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       required_inputs: [:cow],
@@ -23,19 +23,17 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
   end
 
   test "process_type does not affect the fingerprint" do
-    a = EventEngine::EventDefinition::Schema.new(
+    a = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
-      process_type: :durable,
       required_inputs: [:cow],
       optional_inputs: [],
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
     )
 
-    b = EventEngine::EventDefinition::Schema.new(
+    b = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
-      process_type: :broker,
       required_inputs: [:cow],
       optional_inputs: [],
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
@@ -45,7 +43,7 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
   end
 
   test "domain does not affect the fingerprint" do
-    a = EventEngine::EventDefinition::Schema.new(
+    a = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       domain: :sales,
@@ -54,7 +52,7 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
     )
 
-    b = EventEngine::EventDefinition::Schema.new(
+    b = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       domain: :marketing,
@@ -67,7 +65,7 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
   end
 
   test "schemas with different payload have different fingerprints" do
-    a = EventEngine::EventDefinition::Schema.new(
+    a = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       required_inputs: [:cow],
@@ -75,7 +73,7 @@ class SchemaFingerprintTest < ActiveSupport::TestCase
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
     )
 
-    b = EventEngine::EventDefinition::Schema.new(
+    b = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_type: :domain,
       required_inputs: [:cow],

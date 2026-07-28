@@ -2,7 +2,7 @@ require "test_helper"
 
 class EventSchemaQueryTest < ActiveSupport::TestCase
   def build_schema(event_name:, version:, domain: nil)
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: event_name,
       event_version: version,
       event_type: :domain,

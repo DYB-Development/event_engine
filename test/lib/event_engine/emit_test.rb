@@ -4,7 +4,7 @@ require "ostruct"
 module EventEngine
   class EmitTest < ActiveSupport::TestCase
     def cow_fed_schema
-      EventDefinition::Schema.new(
+      CatalogEntry.new(
         event_name: :cow_fed,
         event_version: 1,
         event_type: :domain,
@@ -94,7 +94,7 @@ module EventEngine
     end
 
     def barn_schema(version:, field:)
-      EventDefinition::Schema.new(
+      CatalogEntry.new(
         event_name: :barn_built,
         event_version: version,
         event_type: :domain,

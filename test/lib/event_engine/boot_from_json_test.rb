@@ -14,7 +14,7 @@ class BootFromJsonTest < ActiveSupport::TestCase
   end
 
   test "boot loads the registry from the JSON schema artifact" do
-    schema = EventEngine::EventDefinition::Schema.new(
+    schema = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,

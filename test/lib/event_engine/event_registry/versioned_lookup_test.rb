@@ -2,7 +2,7 @@ require "test_helper"
 
 class EventRegistryVersionedLookupTest < ActiveSupport::TestCase
   def build_schema(name:, version:)
-    EventEngine::EventDefinition::Schema.new(
+    EventEngine::CatalogEntry.new(
       event_name: name,
       event_version: version,
       event_type: :domain,

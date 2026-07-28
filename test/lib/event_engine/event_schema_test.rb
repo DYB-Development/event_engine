@@ -2,7 +2,7 @@ require "test_helper"
 
 class EventSchemaTest < ActiveSupport::TestCase
   test "register stores schemas by event_name and event_version" do
-    schema = EventEngine::EventDefinition::Schema.new(
+    schema = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,
@@ -22,7 +22,7 @@ class EventSchemaTest < ActiveSupport::TestCase
   end
 
   test "register supports multiple versions for the same event_name" do
-    v1 = EventEngine::EventDefinition::Schema.new(
+    v1 = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 1,
       event_type: :domain,
@@ -31,7 +31,7 @@ class EventSchemaTest < ActiveSupport::TestCase
       payload_fields: [{ name: :weight, from: :cow, attr: :weight }]
     )
 
-    v2 = EventEngine::EventDefinition::Schema.new(
+    v2 = EventEngine::CatalogEntry.new(
       event_name: :cow_fed,
       event_version: 2,
       event_type: :domain,
@@ -49,7 +49,7 @@ class EventSchemaTest < ActiveSupport::TestCase
   end
 
   test "register allows the same event_name under different domains" do
-    sales = EventEngine::EventDefinition::Schema.new(
+    sales = EventEngine::CatalogEntry.new(
       event_name: :deal_won,
       event_version: 1,
       event_type: :domain,
@@ -59,7 +59,7 @@ class EventSchemaTest < ActiveSupport::TestCase
       payload_fields: []
     )
 
-    marketing = EventEngine::EventDefinition::Schema.new(
+    marketing = EventEngine::CatalogEntry.new(
       event_name: :deal_won,
       event_version: 1,
       event_type: :domain,
@@ -76,7 +76,7 @@ class EventSchemaTest < ActiveSupport::TestCase
   end
 
   test "register raises a named error on a duplicate (domain, event_name)" do
-    a = EventEngine::EventDefinition::Schema.new(
+    a = EventEngine::CatalogEntry.new(
       event_name: :deal_won,
       event_version: 1,
       event_type: :domain,
@@ -86,7 +86,7 @@ class EventSchemaTest < ActiveSupport::TestCase
       payload_fields: []
     )
 
-    b = EventEngine::EventDefinition::Schema.new(
+    b = EventEngine::CatalogEntry.new(
       event_name: :deal_won,
       event_version: 1,
       event_type: :domain,
