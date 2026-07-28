@@ -6,6 +6,8 @@ module EventEngine
 
     attr_accessor :schema_path
 
+    attr_accessor :rules_path
+
     attr_accessor :publisher_schema_paths
 
     attr_accessor :default_processor
@@ -17,6 +19,7 @@ module EventEngine
     def initialize
       @logger = defined?(Rails) ? Rails.logger : Logger.new($stdout)
       @schema_path = "db/event_schema.json"
+      @rules_path = "config/event_rules.yml"
       @publisher_schema_paths = []
       @domain_processors = {}
       @event_processors = {}

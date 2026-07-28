@@ -56,7 +56,7 @@ module EventEngine
       attrs[:aggregate_type] = aggregate_type
       attrs[:aggregate_id] = aggregate_id
       attrs[:aggregate_version] = aggregate_version
-      attrs[:process_type] = schema.process_type
+      attrs[:process_type] = processing_rules.for(event_name: schema.event_name, pack: schema.domain)
       attrs[:subject] = schema.subject
       attrs[:domain] = schema.domain
 
@@ -64,6 +64,12 @@ module EventEngine
       process(event)
       dispatch(event)
     end
+
+    def processing_rules
+      @processing_rules ||= ProcessingRules.load(configuration.rules_path)
+    end
+
+    attr_writer :processing_rules
 
     def schema_sources(port = definition_port)
       configured = configuration.publisher_schema_paths
