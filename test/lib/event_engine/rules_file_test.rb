@@ -24,5 +24,15 @@ module EventEngine
         assert_equal "durable", YAML.safe_load_file(path).dig("events", "lead_created")
       end
     end
+
+    test "keeps the pack rules" do
+      in_tmp do |path|
+        File.write(path, YAML.dump({ "packs" => { "marketing" => "background" } }))
+
+        RulesFile.sync(path: path, event_names: %i[lead_created])
+
+        assert_equal({ "marketing" => "background" }, YAML.safe_load_file(path)["packs"])
+      end
+    end
   end
 end
