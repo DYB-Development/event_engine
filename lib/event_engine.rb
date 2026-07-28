@@ -8,6 +8,7 @@ require "event_engine/definition_publisher"
 require "event_engine/handler_registry"
 require "event_engine/processor_registry"
 require "event_engine/unroutable_event_error"
+require "event_engine/unregistered_processor_error"
 require "event_engine/processor_resolver"
 require "event_engine/processing_rules"
 require "event_engine/rules_file"
@@ -138,7 +139,10 @@ module EventEngine
       resolver = ProcessorResolver.new(processing_rules)
       return event unless resolver.routes?
 
-      processor_registry.fetch(resolver.resolve(event)).call(event)
+      name = resolver.resolve(event)
+      processor = processor_registry.fetch(name) || raise(UnregisteredProcessorError.new(name, event))
+
+      processor.call(event)
       event
     end
 
