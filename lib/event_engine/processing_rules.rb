@@ -27,5 +27,9 @@ module EventEngine
     def for(event_name:, pack:)
       @events[event_name] || @packs[pack] || @default
     end
+
+    def any?
+      !@default.nil? || @packs.any? || @events.any?
+    end
   end
 end

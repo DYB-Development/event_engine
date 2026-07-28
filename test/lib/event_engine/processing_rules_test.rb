@@ -29,6 +29,10 @@ module EventEngine
       assert_equal :durable, rules.for(event_name: :cow_fed, pack: :sales)
     end
 
+    test "reports no rules when nothing is declared" do
+      refute_predicate ProcessingRules.new, :any?
+    end
+
     test "loads the rules from a yaml file" do
       path = rules_file(<<~YAML)
         default: inline
