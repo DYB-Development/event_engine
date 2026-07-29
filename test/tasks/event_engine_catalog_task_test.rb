@@ -4,7 +4,7 @@ require "rake"
 class EventEngineCatalogTaskTest < ActiveSupport::TestCase
   setup do
     Rake.application = Rake::Application.new
-    load EventEngine::Engine.root.join("lib/tasks/event_engine_catalog.rake")
+    load File.expand_path("../../lib/tasks/event_engine_catalog.rake", __dir__)
     Rake::Task.define_task(:environment)
   end
 
