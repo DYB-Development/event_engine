@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-29
+
+This release completes the split between **authoring** and **runtime**. Events are
+now declared with `event_engine-event_definition` and compiled into a committed
+catalog; this gem builds a validated event from that catalog and hands it to a
+processor. How an event is processed is declared by the host in a rules file.
+
+### Added
+
+- **Processing rules.** `config/event_rules.yml` declares which processor handles
+  each event, resolved **event → pack → default**. `event_engine:catalog` writes the
+  file alongside the catalog, listing every catalogued event so a new one is visible
+  rather than silently unrouted; rules you have already decided are preserved.
+- **Processor registry.** `EventEngine.register_processor(name, processor)`, with
+  processor gems registering themselves under the process types they service.
+- **Pack discovery.** `EventEngine.schema_sources` prefers `publisher_schema_paths`
+  when set and otherwise discovers every pack that registered itself, so a host with
+  packs in its Gemfile needs no per-pack configuration.
+- **`DefinitionPublisher`**, registered at boot, so a pack's generated helper routes
+  into `EventEngine.emit` with no wiring in the host.
+- **`event_engine:rules:check`** — verifies every rule names a registered processor
+  and that no catalogued event is left unrouted. Intended for CI or deploy.
+- Errors that name the fix: `UnregisteredProcessorError`, `UnroutedEventsError`,
+  `InvalidRulesError`.
+
+### Changed
+
+- **Breaking.** `process_type` now comes from the rules file, not the schema. The
+  catalog is the event's contract — what it carries — and no longer describes what
+  happens to it. Previously `emit` read `schema.process_type`, which raised
+  `NoMethodError` for any event authored by a pack.
+- **Breaking.** `EventEngine::EventDefinition::Schema` is now
+  `EventEngine::CatalogEntry`, at `lib/event_engine/catalog_entry.rb`. The old file
+  shared a require path with `event_engine-event_definition`, so in an app running
+  both gems this gem's own class never loaded.
+- **Breaking.** The Rails engine is now a `Rails::Railtie`. Hosts with
+  `mount EventEngine::Engine => "/…"` must remove that line; the gem served no routes.
+- **Breaking.** `event_engine:schema:catalog` is now `event_engine:catalog`.
+
+### Removed
+
+- **Breaking.** The authoring layer — the DSL, compiler, definition loader, lifecycle
+  definitions, schema writers and authoring rake tasks. Declare events with
+  `event_engine-event_definition` instead.
+- **Breaking.** `Configuration#default_processor`, `#domain_processors` and
+  `#event_processors`. Processing is declared in the rules file, which is now the only
+  source for that decision.
+- **Breaking.** `EventEngine::SubjectRegistry`, `EventEngine.define_subjects` and
+  `.subject_registry`. Subjects are an authoring concern; the runtime passes through
+  the subject its catalog entry declares.
+- The markdown catalog printer (`SchemaCatalog`). It omitted the domain, the
+  `from:`/`attr:` mapping and the fingerprint; `db/event_schema.json` is complete.
+- Unreferenced `ProcessType` and `EventSchemaMerger`.
+
+
 ## [0.1.0] - 2026-06-25
 
 ### Added
