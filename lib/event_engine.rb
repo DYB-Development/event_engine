@@ -14,7 +14,6 @@ require "event_engine/processing_rules"
 require "event_engine/rules_file"
 require "event_engine/event_schema"
 require "event_engine/schema_registry"
-require "event_engine/subject_registry"
 require "event_engine/event"
 require "event_engine/event_schema_json_loader"
 require "event_engine/schema_catalog"
@@ -92,18 +91,6 @@ module EventEngine
 
     def definition_port
       ::EventEngine::Definition if defined?(::EventEngine::Definition)
-    end
-
-    def subject_registry
-      @subject_registry ||= SubjectRegistry.new
-    end
-
-    def define_subjects(&block)
-      subject_registry.instance_eval(&block)
-    end
-
-    def reset_subjects!
-      @subject_registry = nil
     end
 
     def enriched_metadata(call_site_metadata)
