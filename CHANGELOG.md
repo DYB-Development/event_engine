@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-29
+
+### Fixed
+
+- Running `event_engine:catalog` broke `emit`. The task scaffolds a rules file
+  listing every catalogued event with no value, and those bare keys counted as
+  declared rules — so routing was considered active while every event resolved to
+  nothing, raising `UnroutableEventError` on emit until each rule was filled in.
+
+  An app that processes events through **handlers** rather than processors — for
+  example one using `event_engine-store`, whose `Recorder` observes every event —
+  could not emit at all after building its catalog.
+
+  An undecided rule is now treated as no rule: a rules file where nothing is decided
+  behaves exactly like no rules file, and `event_engine:rules:check` still reports
+  the undecided events so the gap stays visible.
+
+
 ## [0.2.0] - 2026-07-29
 
 This release completes the split between **authoring** and **runtime**. Events are
