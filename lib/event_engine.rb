@@ -10,6 +10,7 @@ require "event_engine/processor_registry"
 require "event_engine/unroutable_event_error"
 require "event_engine/unregistered_processor_error"
 require "event_engine/invalid_rules_error"
+require "event_engine/unrouted_events_error"
 require "event_engine/processor_resolver"
 require "event_engine/processing_rules"
 require "event_engine/rules_file"
@@ -74,7 +75,17 @@ module EventEngine
       missing = processing_rules.processor_names.reject { |name| processor_registry.fetch(name) }
       raise InvalidRulesError, missing if missing.any?
 
+      raise UnroutedEventsError, unrouted_events if unrouted_events.any?
+
       true
+    end
+
+    def unrouted_events
+      return [] unless processing_rules.any?
+
+      schema_registry.events.reject do |event_name|
+        processing_rules.for(event_name: event_name, pack: schema_registry.latest_for(event_name).domain)
+      end
     end
 
     def schema_sources(port = definition_port)
