@@ -36,7 +36,7 @@ module EventEngine
           Rails.logger.warn(
             "[EventEngine] Schema catalog not found at #{schema_path}. " \
             "Commit it, or build it from your packs' schema.json with: " \
-            "bin/rails event_engine:schema:catalog"
+            "bin/rails event_engine:catalog"
           )
           return
         end
@@ -48,7 +48,7 @@ module EventEngine
             #{schema_path}
 
           Commit the catalog, or build it from your packs' schema.json:
-            bin/rails event_engine:schema:catalog
+            bin/rails event_engine:catalog
         MSG
       end
     end

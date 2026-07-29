@@ -15,7 +15,7 @@ module EventEngine
         EventEngine has no schema for #{event_name} in domain #{domain.inspect}.
 
         Its pack's schema.json is missing from the committed catalog. Rebuild it with:
-          bin/rails event_engine:schema:catalog
+          bin/rails event_engine:catalog
       MSG
     end
   end
