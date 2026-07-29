@@ -33,6 +33,10 @@ module EventEngine
       refute_predicate ProcessingRules.new, :any?
     end
 
+    test "reports no rules when every event is listed but undecided" do
+      refute_predicate ProcessingRules.new(events: { cow_fed: nil, barn_built: nil }), :any?
+    end
+
     test "loads the rules from a yaml file" do
       path = rules_file(<<~YAML)
         default: inline

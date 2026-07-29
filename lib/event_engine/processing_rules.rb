@@ -29,7 +29,7 @@ module EventEngine
     end
 
     def any?
-      !@default.nil? || @packs.any? || @events.any?
+      processor_names.any?
     end
 
     def processor_names
