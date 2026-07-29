@@ -32,6 +32,7 @@ module EventEngine
     teardown do
       EventEngine.schema_registry = @previous_registry
       EventEngine.processing_rules = nil
+      EventEngine.reset_processors!
       EventEngine.reset_handlers!
     end
 
@@ -48,6 +49,7 @@ module EventEngine
       received = []
       EventEngine.register_handler(->(event) { received << event }, process_types: :all)
       EventEngine.processing_rules = ProcessingRules.new(events: { cow_fed: :broker })
+      EventEngine.register_processor(:broker, ->(_event) {})
 
       EventEngine.emit(:cow_fed, inputs: { cow: OpenStruct.new(weight: 500) })
 

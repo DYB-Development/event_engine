@@ -30,9 +30,7 @@ module EventEngine
       EventEngine.schema_registry = @previous_registry
       EventEngine.reset_handlers!
       EventEngine.reset_processors!
-      EventEngine.configuration.default_processor = nil
-      EventEngine.configuration.domain_processors = {}
-      EventEngine.configuration.event_processors = {}
+      EventEngine.processing_rules = nil
     end
 
     def emit_cow_fed
@@ -42,7 +40,7 @@ module EventEngine
     test "emit invokes the resolved processor with the built event" do
       received = []
       EventEngine.register_processor(:subscribers, ->(event) { received << event })
-      EventEngine.configure { |config| config.default_processor = :subscribers }
+      EventEngine.processing_rules = ProcessingRules.new(default: :subscribers)
 
       emit_cow_fed
 
@@ -54,11 +52,9 @@ module EventEngine
       %i[by_default by_domain by_event].each do |name|
         EventEngine.register_processor(name, ->(_event) { chosen << name })
       end
-      EventEngine.configure do |config|
-        config.default_processor = :by_default
-        config.domain_processors = { herd: :by_domain }
-        config.event_processors = { cow_fed: :by_event }
-      end
+      EventEngine.processing_rules = ProcessingRules.new(
+        default: :by_default, packs: { herd: :by_domain }, events: { cow_fed: :by_event }
+      )
 
       emit_cow_fed
 
@@ -66,7 +62,7 @@ module EventEngine
     end
 
     test "emit raises when routing is configured but nothing matches the event" do
-      EventEngine.configure { |config| config.domain_processors = { flock: :shepherd } }
+      EventEngine.processing_rules = ProcessingRules.new(packs: { flock: :shepherd })
 
       assert_raises(UnroutableEventError) { emit_cow_fed }
     end
