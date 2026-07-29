@@ -1,8 +1,7 @@
 module EventEngine
   class SchemaCatalog
-    def initialize(schema_registry:, subject_registry:)
+    def initialize(schema_registry:)
       @schema_registry = schema_registry
-      @subject_registry = subject_registry
     end
 
     def to_markdown
@@ -36,15 +35,7 @@ module EventEngine
     def subject_line(schema)
       return nil unless schema.subject
 
-      details = subject_details(schema.subject)
-      details.empty? ? "- Subject: #{schema.subject}" : "- Subject: #{schema.subject} (#{details})"
-    end
-
-    def subject_details(name)
-      registered = @subject_registry[name]
-      return "" unless registered
-
-      registered.metadata.map { |key, value| "#{key}: #{value}" }.join(", ")
+      "- Subject: #{schema.subject}"
     end
   end
 end

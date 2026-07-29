@@ -24,11 +24,8 @@ class SchemaCatalogTest < ActiveSupport::TestCase
     registry
   end
 
-  def catalog_for(*schemas, subjects: EventEngine::SubjectRegistry.new)
-    EventEngine::SchemaCatalog.new(
-      schema_registry: schema_registry_for(*schemas),
-      subject_registry: subjects
-    )
+  def catalog_for(*schemas)
+    EventEngine::SchemaCatalog.new(schema_registry: schema_registry_for(*schemas))
   end
 
   test "renders a catalog heading" do
@@ -49,13 +46,10 @@ class SchemaCatalogTest < ActiveSupport::TestCase
     assert_includes catalog.to_markdown, "- Type: domain"
   end
 
-  test "includes the subject with its area and owner" do
-    subjects = EventEngine::SubjectRegistry.define do
-      subject :feeding, area: :farm, owner: :data_team
-    end
-    catalog = catalog_for(schema(event_name: :cow_fed, subject: :feeding), subjects: subjects)
+  test "includes the subject the catalog entry declares" do
+    catalog = catalog_for(schema(event_name: :cow_fed, subject: :feeding))
 
-    assert_includes catalog.to_markdown, "- Subject: feeding (area: farm, owner: data_team)"
+    assert_includes catalog.to_markdown, "- Subject: feeding"
   end
 
   test "lists payload fields with their requiredness" do
