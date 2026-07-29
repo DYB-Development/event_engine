@@ -31,5 +31,9 @@ module EventEngine
     def any?
       !@default.nil? || @packs.any? || @events.any?
     end
+
+    def processor_names
+      ([ @default ] + @packs.values + @events.values).compact.uniq
+    end
   end
 end

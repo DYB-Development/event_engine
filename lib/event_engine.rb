@@ -9,6 +9,7 @@ require "event_engine/handler_registry"
 require "event_engine/processor_registry"
 require "event_engine/unroutable_event_error"
 require "event_engine/unregistered_processor_error"
+require "event_engine/invalid_rules_error"
 require "event_engine/processor_resolver"
 require "event_engine/processing_rules"
 require "event_engine/rules_file"
@@ -68,6 +69,13 @@ module EventEngine
     end
 
     attr_writer :processing_rules
+
+    def validate_rules!
+      missing = processing_rules.processor_names.reject { |name| processor_registry.fetch(name) }
+      raise InvalidRulesError, missing if missing.any?
+
+      true
+    end
 
     def schema_sources(port = definition_port)
       configured = configuration.publisher_schema_paths
