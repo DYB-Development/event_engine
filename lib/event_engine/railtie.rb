@@ -1,5 +1,9 @@
 module EventEngine
   class Railtie < ::Rails::Railtie
+    rake_tasks do
+      Dir[File.expand_path("../tasks/*.rake", __dir__)].sort.each { |task| load task }
+    end
+
     initializer "event_engine.load_schema_and_helpers" do |app|
       EventEngine.configuration.schema_path = Rails.root.join("db", "event_schema.json").to_s
 
@@ -12,6 +16,7 @@ module EventEngine
         else
           Railtie.send(:handle_missing_schema!, schema_path)
         end
+
       end
     end
 
