@@ -82,6 +82,15 @@ What a host still decides for itself is **how** each event is processed, in the
 
 ---
 
+## A working example
+
+[**DYB-Development/event_engine_example**](https://github.com/DYB-Development/event_engine_example)
+is a minimal Rails app wired to this pipeline end to end — declaring an event,
+compiling it, declaring how it is processed, and handling it. It installs all three
+gems from RubyGems, so it is what a real host looks like.
+
+---
+
 ## Getting started
 
 ```ruby
