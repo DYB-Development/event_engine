@@ -39,5 +39,20 @@ module EventEngine
 
       assert_includes error.message, "lead_converted"
     end
+
+    test "declaring no rules at all routes nothing and is allowed" do
+      EventEngine.schema_registry = catalog_with(:lead_created)
+      EventEngine.processing_rules = ProcessingRules.new
+
+      assert EventEngine.validate_rules!
+    end
+
+    test "a pack rule covers every event in that pack" do
+      EventEngine.schema_registry = catalog_with(:lead_created, :lead_converted)
+      EventEngine.register_processor(:inline, ->(_event) {})
+      EventEngine.processing_rules = ProcessingRules.new(packs: { marketing: :inline })
+
+      assert EventEngine.validate_rules!
+    end
   end
 end
