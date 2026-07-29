@@ -298,7 +298,7 @@ the payload keys) — handy for processor gems reconstituting a persisted event.
 | Task | What it does |
 |---|---|
 | `event_engine:schema:catalog` | Builds the committed catalog at `schema_path` from every discovered pack (or from `publisher_schema_paths` when set), then keeps the rules file at `rules_path` in step with it. |
-| `event_engine:catalog` | Prints a Markdown catalog of the loaded events and their subjects. |
+| `event_engine:catalog` | Prints a Markdown catalog of the loaded events. |
 
 ---
 
