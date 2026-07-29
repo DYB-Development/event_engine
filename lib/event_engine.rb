@@ -16,7 +16,6 @@ require "event_engine/event_schema"
 require "event_engine/schema_registry"
 require "event_engine/event"
 require "event_engine/event_schema_json_loader"
-require "event_engine/schema_catalog"
 require "event_engine/schema_catalog_builder"
 
 module EventEngine

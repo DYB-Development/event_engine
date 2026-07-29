@@ -69,7 +69,7 @@ module EventEngine
         DefinitionPublisher.new.publish(:cow_moved, domain: :sales, inputs: {})
       end
 
-      assert_includes error.message, "event_engine:schema:catalog"
+      assert_includes error.message, "event_engine:catalog"
     end
   end
 end

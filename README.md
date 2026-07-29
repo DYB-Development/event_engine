@@ -74,7 +74,7 @@ A host installs the gems and configures **nothing per pack**. Both halves self-w
    `EventEngine::Definition.publisher`, so every pack helper routes into
    `EventEngine.emit` automatically.
 2. **Schema discovery** — a generated pack registers itself when required, so
-   `event_engine:schema:catalog` finds every pack's `schema.json` with no
+   `event_engine:catalog` finds every pack's `schema.json` with no
    configuration. See [Building the catalog](#1-build-the-catalog).
 
 What a host still decides for itself is **how** each event is processed, in the
@@ -115,7 +115,7 @@ To build `db/event_schema.json` from your packs, run the catalog task — it fin
 them without configuration:
 
 ```bash
-bin/rails event_engine:schema:catalog
+bin/rails event_engine:catalog
 ```
 
 This writes **two** files: the catalog itself, and the
@@ -233,7 +233,7 @@ and the resolved name is both the processor invoked and the value stamped on
 
 ### Keeping it in step with the catalog
 
-`bin/rails event_engine:schema:catalog` writes this file alongside the catalog:
+`bin/rails event_engine:catalog` writes this file alongside the catalog:
 
 - every catalogued event appears, so a new event is visible rather than silently unrouted
 - rules you have already decided are preserved
@@ -297,15 +297,15 @@ the payload keys) — handy for processor gems reconstituting a persisted event.
 
 | Task | What it does |
 |---|---|
-| `event_engine:schema:catalog` | Builds the committed catalog at `schema_path` from every discovered pack (or from `publisher_schema_paths` when set), then keeps the rules file at `rules_path` in step with it. |
-| `event_engine:catalog` | Prints a Markdown catalog of the loaded events. |
+| `event_engine:catalog` | Builds the committed catalog at `schema_path` from every discovered pack (or from `publisher_schema_paths` when set), then keeps the rules file at `rules_path` in step with it. |
+
 
 ---
 
 ## Known gaps
 
 - **Boot requires a committed `db/event_schema.json`.** The engine raises in
-  production if it is missing. Building it is one task (`event_engine:schema:catalog`),
+  production if it is missing. Building it is one task (`event_engine:catalog`),
   but it does have to be committed.
 - **`the_local` guides.** The AI-assistant reference under
   `lib/event_engine/reference/` and the `the_local` subagents still describe the old
