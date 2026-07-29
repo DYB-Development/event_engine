@@ -1,7 +1,5 @@
 module EventEngine
-  class Engine < ::Rails::Engine
-    isolate_namespace EventEngine
-
+  class Railtie < ::Rails::Railtie
     initializer "event_engine.load_schema_and_helpers" do |app|
       EventEngine.configuration.schema_path = Rails.root.join("db", "event_schema.json").to_s
 
@@ -10,9 +8,9 @@ module EventEngine
         helpers_path = Rails.root.join("db", "event_engine_helpers.rb")
 
         if File.exist?(schema_path)
-          Engine.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)
+          Railtie.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)
         else
-          Engine.send(:handle_missing_schema!, schema_path)
+          Railtie.send(:handle_missing_schema!, schema_path)
         end
       end
     end

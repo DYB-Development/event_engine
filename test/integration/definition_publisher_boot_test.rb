@@ -28,7 +28,7 @@ class DefinitionPublisherBootTest < ActiveSupport::TestCase
       catalog_path = File.join(dir, "event_schema.json")
       File.write(catalog_path, JSON.pretty_generate([cow_fed_schema.to_h]))
 
-      EventEngine::Engine.send(
+      EventEngine::Railtie.send(
         :boot!,
         schema_path: catalog_path,
         helpers_path: File.join(dir, "event_engine_helpers.rb")

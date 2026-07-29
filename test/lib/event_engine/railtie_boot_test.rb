@@ -3,7 +3,7 @@ require "tmpdir"
 require "ostruct"
 require "json"
 
-class EngineBootTest < ActiveSupport::TestCase
+class RailtieBootTest < ActiveSupport::TestCase
   include EventEngineTestHelpers
 
   def cow_fed_schema
@@ -40,7 +40,7 @@ class EngineBootTest < ActiveSupport::TestCase
       File.write(schema_path, JSON.pretty_generate([cow_fed_schema.to_h]))
       File.write(helpers_path, helpers_source)
 
-      EventEngine::Engine.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)
+      EventEngine::Railtie.send(:boot!, schema_path: schema_path, helpers_path: helpers_path)
 
       event = EventEngine::Sales.cow_fed(cow: OpenStruct.new(weight: 500))
       assert_equal 500, event.payload[:weight]

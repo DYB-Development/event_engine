@@ -1,6 +1,6 @@
 require_relative "event_engine/version"
 
-require "event_engine/engine"
+require "event_engine/railtie"
 require "event_engine/configuration"
 require "event_engine/catalog_entry"
 require "event_engine/event_builder"
