@@ -164,10 +164,23 @@ module EventEngine
 
       registry.reset!
       registry.load_from_schema!(event_schema)
+      carry_over_registered_schemas(into: registry)
 
       self.schema_registry = registry
 
       event_schema
+    end
+
+    def carry_over_registered_schemas(into:)
+      return unless @schema_registry
+
+      @schema_registry.event_schema.schemas_by_event.each_value do |versions|
+        versions.each_value do |schema|
+          next if into.versions_for(schema.event_name, domain: schema.domain).include?(schema.event_version)
+
+          into.register(schema)
+        end
+      end
     end
 
     def register_slice!(schema_path:)
