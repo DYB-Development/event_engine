@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns the `EventSchema` its callers assign.
 - `SchemaRegistry#reset!` left `@event_schema` as a plain `Hash`, so registering
   into a reset registry raised `NoMethodError`.
+- Boot discarded gem-registered schema slices. `boot_from_schema!` replaced the
+  global registry with a fresh one holding only the host catalog, so events a
+  pack registered with `register_slice!` during initialization raised
+  `UnknownEventError` at runtime. Boot now carries them into the booted
+  registry, and the catalog's entry wins where both carry the same event.
 
 ## [0.2.1] - 2026-07-29
 
