@@ -174,7 +174,7 @@ module EventEngine
       slice = EventSchemaJsonLoader.load(schema_path)
 
       schema_registry.load_from_schema!(EventSchema.new) unless schema_registry.loaded?
-      slice.schemas_by_event.each_value do |versions|
+      slice.event_schema.schemas_by_event.each_value do |versions|
         versions.each_value { |schema| schema_registry.register(schema) }
       end
 
