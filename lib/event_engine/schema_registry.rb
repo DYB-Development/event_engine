@@ -30,7 +30,7 @@ module EventEngine
     end
 
     def reset!
-      @event_schema = {}
+      @event_schema = EventSchema.new
       @loaded = false
     end
 

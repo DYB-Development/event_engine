@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Versioned lookup after boot. `EventSchemaJsonLoader.load` returned a
+  `SchemaRegistry` where `SchemaRegistry#load_from_schema!` stores an
+  `EventSchema`, so `emit(..., event_version: 2)` — documented in the README —
+  called `schema_for` on a registry and raised `NoMethodError`. The loader now
+  returns the `EventSchema` its callers assign.
+- `SchemaRegistry#reset!` left `@event_schema` as a plain `Hash`, so registering
+  into a reset registry raised `NoMethodError`.
+
 ## [0.2.1] - 2026-07-29
 
 ### Fixed

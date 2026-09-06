@@ -3,17 +3,17 @@ require "json"
 module EventEngine
   class EventSchemaJsonLoader
     def self.load(path)
-      registry = SchemaRegistry.new
-      return registry unless File.exist?(path)
+      schema = EventSchema.new
+      return schema unless File.exist?(path)
 
       contents = File.read(path.to_s)
-      return registry if contents.strip.empty?
+      return schema if contents.strip.empty?
 
       JSON.parse(contents).each do |attributes|
-        registry.register(CatalogEntry.from_h(attributes))
+        schema.register(CatalogEntry.from_h(attributes))
       end
 
-      registry
+      schema
     end
   end
 end
