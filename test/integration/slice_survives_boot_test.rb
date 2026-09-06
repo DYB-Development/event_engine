@@ -58,4 +58,22 @@ class SliceSurvivesBootTest < ActiveSupport::TestCase
     slice.unlink
     catalog.unlink
   end
+
+  test "an event the catalog already carries does not break boot when a slice registered it too" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    slice = write_json(build_schema(:cow_fed, :cattle))
+    catalog = write_json(build_schema(:cow_fed, :cattle))
+
+    EventEngine.register_slice!(schema_path: slice.path)
+
+    assert_nothing_raised do
+      EventEngine.boot_from_schema!(
+        schema_path: catalog.path,
+        registry: EventEngine::SchemaRegistry.new
+      )
+    end
+  ensure
+    slice.unlink
+    catalog.unlink
+  end
 end
