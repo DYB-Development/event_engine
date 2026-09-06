@@ -41,4 +41,21 @@ class SliceSurvivesBootTest < ActiveSupport::TestCase
     slice.unlink
     catalog.unlink
   end
+
+  test "a slice registered after boot resolves alongside the catalog" do
+    EventEngine.schema_registry = EventEngine::SchemaRegistry.new
+    slice = write_json(build_schema(:pig_weighed, :swine))
+    catalog = write_json(build_schema(:cow_fed, :cattle))
+
+    EventEngine.boot_from_schema!(
+      schema_path: catalog.path,
+      registry: EventEngine::SchemaRegistry.new
+    )
+    EventEngine.register_slice!(schema_path: slice.path)
+
+    assert_equal :cow_fed, EventEngine.schema_registry.schema(:cow_fed).event_name
+  ensure
+    slice.unlink
+    catalog.unlink
+  end
 end
