@@ -33,4 +33,25 @@ class BootFromJsonTest < ActiveSupport::TestCase
   ensure
     file.unlink
   end
+
+  test "an event is resolvable by explicit version after boot" do
+    schema = EventEngine::CatalogEntry.new(
+      event_name: :cow_fed,
+      event_version: 1,
+      event_type: :domain,
+      required_inputs: [:cow],
+      optional_inputs: [],
+      payload_fields: [{ name: :weight, required: true, from: :cow, attr: :weight }]
+    )
+    file = write_json(schema)
+
+    EventEngine.boot_from_schema!(
+      schema_path: file.path,
+      registry: EventEngine::SchemaRegistry.new
+    )
+
+    assert_equal 1, EventEngine.schema_registry.schema(:cow_fed, version: 1).event_version
+  ensure
+    file.unlink
+  end
 end
