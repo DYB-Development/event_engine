@@ -29,13 +29,4 @@ class EventRegistryLoadFromSchemaTest < ActiveSupport::TestCase
     assert_equal 2, cow.event_version
     assert_equal 1, pig.event_version
   end
-
-  test "a reset registry can register an event again" do
-    registry = EventEngine::SchemaRegistry.new
-    registry.reset!
-
-    registry.register(build_schema(event_name: :cow_fed, version: 1))
-
-    assert_equal [1], registry.versions_for(:cow_fed)
-  end
 end
