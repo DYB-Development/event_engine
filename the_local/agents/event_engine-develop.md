@@ -144,6 +144,8 @@ off to that local first and come back.
   Setting only `domain_processors` for one domain therefore breaks every other
   domain; pair narrow rules with a `default_processor`.
 - Routing at a name with no registered processor fails at emit time, not at boot.
+- A rule of `unrouted` defines an event before anything handles it. It passes the
+  rules check, and emitting it raises `EventEngine::UnroutableEventError`.
   Keep steps 3 and 4 in the same initializer so they cannot drift.
 - A pack helper firing an event that is not in the committed catalog raises
   `EventEngine::DefinitionPublisher::EventNotInCatalogError`. That means the
