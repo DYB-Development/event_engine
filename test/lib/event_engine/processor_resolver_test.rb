@@ -33,6 +33,12 @@ class EventEngine::ProcessorResolverTest < ActiveSupport::TestCase
     end
   end
 
+  test "raises when the event's rule says unrouted" do
+    assert_raises(EventEngine::UnroutableEventError) do
+      EventEngine::ProcessorResolver.new(rules(default: :subscribers, events: { cow_fed: :unrouted })).resolve(event)
+    end
+  end
+
   test "the unroutable error names the event" do
     error = assert_raises(EventEngine::UnroutableEventError) do
       EventEngine::ProcessorResolver.new(rules).resolve(event(event_name: :barn_built))
