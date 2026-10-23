@@ -9,8 +9,10 @@ module EventEngine
     end
 
     def resolve(event)
-      @rules.for(event_name: event.event_name, pack: event.domain) ||
-        raise(UnroutableEventError.new(event))
+      name = @rules.for(event_name: event.event_name, pack: event.domain)
+      raise UnroutableEventError.new(event) if name.nil? || name == ProcessingRules::UNROUTED
+
+      name
     end
   end
 end

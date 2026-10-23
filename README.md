@@ -234,6 +234,7 @@ packs:
 events:
   invoice_voided: audit   # this one event
   lead_converted:         # catalogued but undecided
+  lead_scored: unrouted   # defined, not routed yet
 ```
 
 A rule names a **registered processor**. Resolution is **event → pack → default**,
@@ -250,6 +251,13 @@ and the resolved name is both the processor invoked and the value stamped on
 
 A newly catalogued event appears with no value. It falls through to its pack rule or
 the default; if neither exists, emitting it raises rather than being dropped.
+
+### Defining an event before it is routed
+
+Give an event the rule `unrouted` to define it before anything handles it. It
+passes `validate_rules!` and `event_engine:rules:check`, and emitting it raises
+`EventEngine::UnroutableEventError`. Replace `unrouted` with a processor name once
+the event has one.
 
 ### When a rule is wrong
 

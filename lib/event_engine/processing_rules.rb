@@ -2,6 +2,8 @@ require "yaml"
 
 module EventEngine
   class ProcessingRules
+    UNROUTED = :unrouted
+
     def self.load(path)
       return new unless File.exist?(path.to_s)
 
@@ -33,7 +35,7 @@ module EventEngine
     end
 
     def processor_names
-      ([ @default ] + @packs.values + @events.values).compact.uniq
+      ([ @default ] + @packs.values + @events.values).compact.uniq - [ UNROUTED ]
     end
   end
 end

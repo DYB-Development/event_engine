@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Unrouted events.** A rule of `unrouted` defines an event before anything
+  handles it. It passes `validate_rules!`, and emitting it raises
+  `EventEngine::UnroutableEventError`.
+
 ## [0.2.2] - 2026-09-06
 
 ### Fixed

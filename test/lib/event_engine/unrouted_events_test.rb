@@ -47,6 +47,14 @@ module EventEngine
       assert EventEngine.validate_rules!
     end
 
+    test "an event whose rule says unrouted passes the rules check" do
+      EventEngine.schema_registry = catalog_with(:lead_created, :lead_converted)
+      EventEngine.register_processor(:inline, ->(_event) {})
+      EventEngine.processing_rules = ProcessingRules.new(events: { lead_created: :inline, lead_converted: :unrouted })
+
+      assert EventEngine.validate_rules!
+    end
+
     test "a pack rule covers every event in that pack" do
       EventEngine.schema_registry = catalog_with(:lead_created, :lead_converted)
       EventEngine.register_processor(:inline, ->(_event) {})
