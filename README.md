@@ -235,6 +235,7 @@ events:
   invoice_voided: audit   # this one event
   lead_converted:         # catalogued but undecided
   lead_scored: unrouted   # defined, not routed yet
+  lead_viewed: recorded   # kept by every-type handlers, processed by nothing
 ```
 
 A rule names a **registered processor**. Resolution is **event → pack → default**,
@@ -258,6 +259,15 @@ Give an event the rule `unrouted` to define it before anything handles it. It
 passes `validate_rules!` and `event_engine:rules:check`, and emitting it raises
 `EventEngine::UnroutableEventError`. Replace `unrouted` with a processor name once
 the event has one.
+
+### Keeping an event without processing it
+
+Give an event the rule `recorded` when nothing should process it but it should still
+reach the handlers registered for every process type, such as a store that keeps
+each event. No processor runs and none needs to be registered under that name, and
+emitting it passes the event to those handlers in the same call, so an error a
+handler raises reaches the code that emitted it. The event's `process_type` is
+`recorded`.
 
 ### When a rule is wrong
 

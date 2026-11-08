@@ -147,6 +147,10 @@ off to that local first and come back.
   Keep steps 3 and 4 in the same initializer so they cannot drift.
 - A rule of `unrouted` defines an event before anything handles it. It passes the
   rules check, and emitting it raises `EventEngine::UnroutableEventError`.
+- A rule of `recorded` runs no processor and still passes the event to every
+  handler registered for all process types, such as a store that keeps each event,
+  in the same call. It needs no processor registered under that name and passes
+  the rules check. Use it for an event that is only kept as a history.
 - A pack helper firing an event that is not in the committed catalog raises
   `EventEngine::DefinitionPublisher::EventNotInCatalogError`. That means the
   catalog is stale — rebuild it in step 2, do not work around it in app code.

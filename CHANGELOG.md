@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A rule of `recorded` runs no processor and still passes the event to the handlers registered for every process type in the same call, so an event that is only kept, such as a history a store records, needs no processor or subscriber. It passes `validate_rules!` with no processor registered under that name.
+
 ## [0.2.3] - 2026-10-23
 
 ### Added
