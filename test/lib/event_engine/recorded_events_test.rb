@@ -42,5 +42,12 @@ module EventEngine
 
       assert_equal [ :lead_created ], handled
     end
+
+    test "a rule that says recorded passes the rules check with no processor registered under that name" do
+      EventEngine.schema_registry = catalog_with(:lead_created)
+      EventEngine.processing_rules = ProcessingRules.new(events: { lead_created: :recorded })
+
+      assert EventEngine.validate_rules!
+    end
   end
 end

@@ -36,7 +36,7 @@ module EventEngine
     end
 
     def processor_names
-      ([ @default ] + @packs.values + @events.values).compact.uniq - [ UNROUTED ]
+      ([ @default ] + @packs.values + @events.values).compact.uniq - [ UNROUTED, RECORDED ]
     end
   end
 end
