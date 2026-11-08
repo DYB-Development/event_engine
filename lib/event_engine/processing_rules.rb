@@ -3,6 +3,7 @@ require "yaml"
 module EventEngine
   class ProcessingRules
     UNROUTED = :unrouted
+    RECORDED = :recorded
 
     def self.load(path)
       return new unless File.exist?(path.to_s)

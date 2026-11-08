@@ -145,6 +145,8 @@ module EventEngine
       return event unless resolver.routes?
 
       name = resolver.resolve(event)
+      return event if name == ProcessingRules::RECORDED
+
       processor = processor_registry.fetch(name) || raise(UnregisteredProcessorError.new(name, event))
 
       processor.call(event)
